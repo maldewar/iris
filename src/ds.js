@@ -122,6 +122,10 @@ IRIS._requestDatasourceAjaxSuccess = function(data) {
     if (typeof this.success == 'function')
         this.success(data, this);
     //Process entities.
+    if (typeof IRIS.ctrl.dsEntRel[this.id] != 'undefined')
+        for(var key in IRIS.ctrl.dsEntRel[this.id])
+            if (typeof IRIS.ctrl.ent[key] != 'undefined')
+                IRIS.createInstances(data, IRIS.ctrl.ent[key], IRIS.ctrl.dsEntRel[this.id][key]);
 };
 
 IRIS._requestDatasourceAjaxError = function() {

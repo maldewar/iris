@@ -1,5 +1,16 @@
+/* Entity related control structures */
 IRIS.ctrl.ent = {};
+IRIS.ctrl.entIns = {}; //Saves all the instances of entities
+IRIS.ctrl.entObj = {}; //Saves the objects used to create instances
 IRIS.ctrl.dsEntRel = {};
+
+/* Entity related global events */
+IRIS.EV_ENTITY_REGISTERED = 'entityRegistered';
+IRIS.EV_ENTITY_UNREGISTERED = 'entityUnregistered';
+IRIS.EV_ENTITY_CREATED = 'entityCreated';
+IRIS.EV_ENTITY_UPDATED = 'entityUpdated';
+IRIS.EV_ENTITY_DELETED = 'entityDeleted';
+
 IRIS.createEntity= function(pEntity, pOpts) {
     var id  = false;
     if (typeof pEntity == 'string') {
@@ -47,6 +58,17 @@ IRIS.getEntityPath = function(pEntityId, pDatasourceId) {
     return false;
 };
 
+IRIS.deleteEntity = function(pEntityId, pIndex) {
+    if (typeof IRIS.ctrl.entIns[pEntityId] !== 'undefined' && 
+        typeof IRIS.ctrl.entIns[pEntityId][pIndex] !== 'undefined') {
+        delete IRIS.ctrl.entIns[pEntityId][pIndex];
+        delete IRIS.ctrl.entObj[pEntityId][pIndex];
+        IRIS._triggerEvent(IRIS.EV_ENTITY_DELETED, pIndex, IRIS.ctrl.ent[pEntityId]);
+        return true;
+    }
+    return false;
+};
+
 IRIS._defaultEntity = {
     index: '',
     exclude: '',
@@ -69,11 +91,54 @@ IRIS._createEntity = function(pOpts) {
             }
         else if (IRIS.getEntityPath(oEntity.id,oEntity.ds) === false)
             IRIS.setEntityPath(oEntity.id, oEntity.ds, '');
+        IRIS.ctrl.entIns[oEntity.id] = {};
+        IRIS.ctrl.entObj[oEntity.id] = {};
     } else {
         //LOG entities already registered with this ID
         oEntity = false;
     }
+    IRIS._triggerEvent(IRIS.EV_ENTITY_REGISTERED, oEntity);
     return oEntity;
+};
+
+// Process data and creates entity's instances from it.
+IRIS.createInstances = function(data, oEntity, strPath) {
+    if (strPath !== '' && typeof eval('data.'+strPath) == 'undefined')
+        return false; //TODO: log not path found
+    var dataContainer = data;
+    if (strPath !== '')
+        dataContainer = eval('data.'+strPath);
+    for (var key in dataContainer) {
+        IRIS.createInstance(dataContainer[key], oEntity, key);
+    }
+};
+
+// Instanciates an entity, index is optional
+IRIS.createInstance = function(data, oEntity, index) {
+    if ($.trim(oEntity.index) !== '' && typeof data[oEntity.index] !== 'undefined')
+        index = data[oEntity.index];
+    // TODO: define valid index for instance
+    if (typeof oEntity.beforeCreate == 'function')
+        oEntity.beforeCreate(index, data, oEntity);
+    //Remove excluded properties before comparing objects
+    if (typeof oEntity.exclude == 'string' && $.trim(oEntity.exclude) !== '')
+        delete data[oEntity.exclude];
+    else if (oEntity.exclude instanceof Array)
+        for (var key in oEntity.exclude)
+            delete data[oEntity.exclude[key]];
+    var isNew = typeof IRIS.ctrl.entIns[oEntity.id][index] == 'undefined';
+    if (isNew || ! IRIS._areEqual(IRIS.ctrl.entObj[oEntity.id][index], data) ) {
+        if (isNew)
+            IRIS._triggerEvent(IRIS.EV_ENTITY_CREATED, index, data, oEntity);
+        else
+            IRIS._triggerEvent(IRIS.EV_ENTITY_UPDATED, index, IRIS.ctrl.entObj[oEntity.id][index], data, oEntity);
+        IRIS.ctrl.entObj[oEntity.id][index] = data;
+        //TODO: set spanlife if applies.
+        IRIS.ctrl.entIns[oEntity.id][index] = data;
+        if (typeof oEntity.create == 'function')
+            oEntity.create(index, data, oEntity);
+    }
+    return false;
 };
 
 IRIS.Entity = function(opts){
@@ -101,4 +166,25 @@ IRIS.Entity.prototype = {
         this[param] = value;
         return true;
     }
+};
+
+/* Global events binding */
+IRIS.onEntityRegistered = function(fn) {
+    return IRIS._bindEvent(IRIS.EV_ENTITY_REGISTERED, fn);
+};
+
+IRIS.onEntityUnregistered = function(fn) {
+    return IRIS._bindEvent(IRIS.EV_ENTITY_UNREGISTERED, fn);
+};
+
+IRIS.onEntityCreated = function(fn) {
+    return IRIS._bindEvent(IRIS.EV_ENTITY_CREATED, fn);
+};
+
+IRIS.onEntityUpdated = function(fn) {
+    return IRIS._bindEvent(IRIS.EV_ENTITY_UPDATED, fn);
+};
+
+IRIS.onEntityDeleted = function(fn) {
+    return IRIS._bindEvent(IRIS.EV_ENTITY_DELETED, fn);
 };
