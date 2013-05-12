@@ -5,7 +5,7 @@ IRIS.ctrl = {
 };
 IRIS.fn = {};
 
-IRIS.start = function() {
+IRIS.start = function(opts) {
     for(var key in IRIS.ctrl.ds) {
         if (IRIS.ctrl.ds[key].firstCall)
             IRIS.ctrl.ds[key].requestData();
@@ -15,6 +15,15 @@ IRIS.start = function() {
                 IRIS.ctrl.ds[key].rate);
     }
     IRIS.ctrl.init = true;
+
+    var engineId = '';
+    if (typeof opts == 'object' && typeof opts.engine == 'string') 
+        engineId = opts.engine;
+    else if (typeof opts == 'string')
+        engineId = opts;
+    if (engineId !== '' && typeof IRIS.ctrl.engine[engineId] != 'undefined')
+        IRIS.ctrl.engine[engineId].init();
+        
 };
 
 IRIS._areEqual = function(a, b) {
@@ -36,4 +45,32 @@ IRIS._triggerEvent = function(eventName, param1, param2, param3, param4, param5,
     if (typeof IRIS.fn[eventName] !== 'undefined')
         for (var key in IRIS.fn[eventName])
             IRIS.fn[eventName][key](param1, param2, param3, param4, param5, param6);
+};
+
+IRIS._setterUndef = function(value, def) {
+    if (typeof value == 'undefined')
+        /*if (typeof dev == 'undefined')
+            return false;
+        else*/
+            return def;
+    else
+        return value;
+};
+
+IRIS._setterVector2 = function(values, def) {
+    if (values instanceof IRIS.Vector2)
+        return values;
+    else if (typeof values == 'object')
+        return new IRIS.Vector2(values.x, values.y);
+    else
+        return def;
+};
+
+IRIS._setterVector3 = function(values, def) {
+    if (values instanceof IRIS.Vector3)
+        return values;
+    else if (typeof values == 'object') 
+        return new IRIS.Vector3(values.x, values.y, values.z);
+    else
+        return def;
 };
