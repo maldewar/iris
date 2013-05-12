@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="language" content="en" />
+	<link rel="stylesheet" type="text/css" href="css/main.css" />
+	<script src="js/jquery.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/threex.domevent.js"></script>
+    <script src="js/threex.domevent.object3d.js"></script>
+    <script src="js/TrackballControls.js"></script>
+	<script src="../dist/iris.js"></script>
+	<title>Iris</title>
+</head>
+<body>
+<button id="startIrisBtn">Start Iris!</button>
+<div id="container">
+</div>
+<div>
+<script type="text/javascript">
+/* Datasources */
+var ds1 = {id:'devices', uri:'/aircrack/index.php?r=api/getDevices', auto: true, rate: 2000};
+var ds2 = {id:'network', uri:'/aircrack/index.php?r=api/getNetworks', auto: true, rate: 10000};
+var arrDS = [ds1, ds2];
+var ds = IRIS.createDatasource(arrDS);
+
+/* Entities */
+var e1 = {id:'device', ds:'devices', exclude:['Probed_ESSIDs','Packets']};
+var e2 = {id:'network', index: 'BSSID'};
+var arrE = [e1,e2];
+var ent = IRIS.createEntity(arrE);
+
+$(document).ready(function(){
+    $('#startIrisBtn').button().click(function(){
+        IRIS.start('planetarium');
+    });
+});
+
+</script>
+</div>
+</body>
+</html>
