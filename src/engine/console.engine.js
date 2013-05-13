@@ -1,4 +1,4 @@
-var oConsoleEngine = new IRIS.Engine({
+/*var oConsoleEngine = new IRIS.Engine({
         id : 'console',
         type: IRIS.Engine.TYPE_1D,
         getScene: function() {
@@ -21,4 +21,4 @@ var oConsoleEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oConsoleEngine);
+IRIS.registerEngine(oConsoleEngine);*/

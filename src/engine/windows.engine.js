@@ -1,4 +1,4 @@
-var oWindowsEngine = new IRIS.Engine({
+/*var oWindowsEngine = new IRIS.Engine({
         id : 'windows',
         type: IRIS.Engine.TYPE_2D,
         getScene: function() {
@@ -6,4 +6,4 @@ var oWindowsEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oWindowsEngine);
+IRIS.registerEngine(oWindowsEngine);*/

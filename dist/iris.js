@@ -22,12 +22,24 @@ IRIS.start = function(opts) {
     else if (typeof opts == 'string')
         engineId = opts;
     if (engineId !== '' && typeof IRIS.ctrl.engine[engineId] != 'undefined')
-        IRIS.ctrl.engine[engineId].init();
+        new IRIS.ctrl.engine[engineId]();
         
+};
+
+IRIS._isUndef = function(a) {
+    return (typeof a == 'undefined');
 };
 
 IRIS._areEqual = function(a, b) {
     return (JSON.stringify(a) == JSON.stringify(b));
+};
+
+IRIS._isObject = function(a) {
+    return (typeof a == 'object' && !(a instanceof Array));
+};
+
+IRIS._isArray = function(a) {
+    return (a instanceof Array);
 };
 
 IRIS._bindEvent = function(eventName, fn) {
@@ -180,7 +192,16 @@ IRIS.Asset.prototype = {
 
 IRIS.assetProvider = Class.extend({
     _assetIns: {},
+    _entityAsset: {},
+    _assetOpts: {},
     init: function(opts) {
+        if (IRIS._isObject(opts)) {
+            for(var key in opts) {
+                opts[key] = this._normalizeOpts(key, opts[key]);
+                this._registerEntityAssetRel(key,opts[key].entity);
+                this._registerAssetOpts(key, opts[key]);
+            }
+        }
     },
     getAsset: function(index, data, oEntity) {
         if (typeof this._assetIns[oEntity.id] !== 'undefined' && 
@@ -194,8 +215,34 @@ IRIS.assetProvider = Class.extend({
         return oAsset;
     },
     getAssetId: function(index, data, oEntity) {
-        //TODO Implement Asset-Entity relationship control
-        return oEntity.id;
+        if (!IRIS._isUndef(this._entityAsset[oEntity.id]))
+            return this._entityAsset[oEntity.id];
+        return false;
+    },
+    getAssetOpts: function(assetId) {
+        if (!IRIS._isUndef(this._assetOpts[assetId]))
+            return this._assetOpts[assetId];
+        return false;
+    },
+    _normalizeOpts: function(assetId, opts) {
+        if (typeof opts == 'object') {
+            if (typeof opts.entity == 'undefined')
+                opts.entity = assetId;
+        }
+        return opts;
+        //TODO: normalize other options for assets, such as color.
+    },
+    _registerEntityAssetRel: function(entityId, assetId) {
+        if (IRIS._isUndef(this._entityAsset[entityId]))
+            this._entityAsset[entityId] = assetId;
+        else
+            if (IRIS._isArray(this._entityAsset[entityId]))
+                this._entityAsset[entityId].push(assetId);
+            else
+                this._entityAsset[entityId] = [this._entityAsset[entityId], assetId];
+    },
+    _registerAssetOpts: function(assetId, opts) {
+        this._assetOpts[assetId] = opts;
     }
     /**
      * Functions that should be declared by extended class:
@@ -388,30 +435,16 @@ IRIS.Datasource.prototype = {
     }
 };
 
-IRIS.ctrl.engine = {};
-/*
- * UI Engine.
- * @class Engine
- */
-IRIS.Engine = function(opts) {
-    this.id = opts.id;
-    this.isRunning = false;
-    this.type = opts.type;
-    this.scene = opts.scene;
-    this.assetProvider = this._getAssetProviderInstance(opts.assetProvider, opts.assetProviderOpts);
+IRIS.Engine = Class.extend({
+    init: function(opts) {
+        this.isRunning = false;
+        //this.scene = opts.scene;
+        this.assetProvider = this._getAssetProviderInstance(this.assetProvider, IRIS.ui.asset);
 
-    /*Functions to be defined by each Engine specific implementation*/
-    this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
-    this.createAsset = opts.createAsset; //Must return a valid Asset instance.
-    this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
-};
-
-IRIS.Engine.TYPE_1D = '1D';
-IRIS.Engine.TYPE_2D = '2D';
-IRIS.Engine.TYPE_3D = '3D';
-
-IRIS.Engine.prototype = {
-    init: function() {
+        /*Functions to be defined by each Engine specific implementation*/
+        //this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
+        //this.createAsset = opts.createAsset; //Must return a valid Asset instance.
+        //this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
         this.scene = this.getScene();
         this.scene.init();
         IRIS.onEntityCreated(this._createAsset.bind(this));
@@ -433,16 +466,21 @@ IRIS.Engine.prototype = {
     },
     _deleteAsset: function(index, oEntity) {
     },
-    _getAssetProviderInstance: function (assetProviderId) {
-        if (typeof IRIS.ctrl.assetProvider[assetProviderId] !== 'undefined')
-            return new IRIS.ctrl.assetProvider[assetProviderId]();
+    _getAssetProviderInstance: function (id, opts) {
+        if (typeof IRIS.ctrl.assetProvider[id] !== 'undefined')
+            return new IRIS.ctrl.assetProvider[id](opts);
         else
             return false;
     }
-};
+});
 
-IRIS.registerEngine = function(oEngine) {
-    IRIS.ctrl.engine[oEngine.id] = oEngine;
+IRIS.Engine.TYPE_1D = '1D';
+IRIS.Engine.TYPE_2D = '2D';
+IRIS.Engine.TYPE_3D = '3D';
+
+IRIS.ctrl.engine = {};
+IRIS.registerEngine = function(engineClass, id) {
+    IRIS.ctrl.engine[id] = engineClass;
 };
 
 /* Entity related control structures */
@@ -831,17 +869,39 @@ IRIS.ThreejsAssetProvider = IRIS.assetProvider.extend({
         this._super(opts);
     },
     getAssetObject: function(index, data, oEntity) {
-        var radius = 13,
-            segments = 12,
-            rings = 12;
+        var assetId = this.getAssetId(index, data, oEntity);
+        var assetOpts = this.getAssetOpts(assetId);
+        if (assetId !== false && assetOpts !== false) {
+            switch (assetOpts.type) { //TODO: use constants
+                case 'sphere':
+                    return this.getSphere(assetOpts);
+                default:
+                    return false; //TODO: return some default geometry
+            }
+        } else
+            return false;
+    },
+    // radius, segments, thetaStart, thetaLength
+    getCircle: function(opts) {
+    },
+    // width, height, depth, widtSegments, heightSegments, depthSegments
+    getCube: function(opts) {
+    },
+    // radius, segments, rings
+    getSphere: function(opts) {
         var assetObject = new THREE.Mesh(
-            new THREE.SphereGeometry(radius,segments,rings),
+            new THREE.SphereGeometry(opts.radius, 
+                                     opts.segments,
+                                     opts.rings),
             new THREE.MeshLambertMaterial({color: 0xDDCCCC}));
         return assetObject;
     }
 });
 
 IRIS.registerAssetProvider(IRIS.ThreejsAssetProvider, 'threejs');
+
+IRIS.ui = {};
+IRIS.ui.asset = {};
 
 /*
  * 2D Vector.
@@ -1067,14 +1127,14 @@ IRIS.Vector3.prototype = {
  * CSS Class abstraction.
  * @class Style
  */
-IRIS.Style = function(r, g, b, a) {
+IRIS.Color = function(r, g, b, a) {
     this.r = (r?r:0);
     this.g = (g?g:0);
     this.b = (b?b:0);
     this.a = (a?a:1);
 };
 
-IRIS.Style.prototype = {
+IRIS.Color.prototype = {
 };
 
 /*
@@ -1274,7 +1334,7 @@ IRIS.VelocityInitializer = IRIS.VectorInitializer.extend({
     init: function(){ }
 });
 
-var oConsoleEngine = new IRIS.Engine({
+/*var oConsoleEngine = new IRIS.Engine({
         id : 'console',
         type: IRIS.Engine.TYPE_1D,
         getScene: function() {
@@ -1297,13 +1357,15 @@ var oConsoleEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oConsoleEngine);
+IRIS.registerEngine(oConsoleEngine);*/
 
-var oPlanetariumEngine = new IRIS.Engine({
-        id : 'planetarium',
+IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
         assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
         type: IRIS.Engine.TYPE_3D,
+        init: function(opts) {
+            this._super(opts);
+        },
         getScene: function() {
             return new IRIS.Scene({
                 val:{
@@ -1375,9 +1437,9 @@ var oPlanetariumEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oPlanetariumEngine);
+IRIS.registerEngine(IRIS.PlanetariumEngine, 'planetarium');
 
-var oWindowsEngine = new IRIS.Engine({
+/*var oWindowsEngine = new IRIS.Engine({
         id : 'windows',
         type: IRIS.Engine.TYPE_2D,
         getScene: function() {
@@ -1385,4 +1447,4 @@ var oWindowsEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oWindowsEngine);
+IRIS.registerEngine(oWindowsEngine);*/

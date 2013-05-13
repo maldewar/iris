@@ -1,27 +1,13 @@
-IRIS.ctrl.engine = {};
-/*
- * UI Engine.
- * @class Engine
- */
-IRIS.Engine = function(opts) {
-    this.id = opts.id;
-    this.isRunning = false;
-    this.type = opts.type;
-    this.scene = opts.scene;
-    this.assetProvider = this._getAssetProviderInstance(opts.assetProvider, opts.assetProviderOpts);
+IRIS.Engine = Class.extend({
+    init: function(opts) {
+        this.isRunning = false;
+        //this.scene = opts.scene;
+        this.assetProvider = this._getAssetProviderInstance(this.assetProvider, IRIS.ui.asset);
 
-    /*Functions to be defined by each Engine specific implementation*/
-    this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
-    this.createAsset = opts.createAsset; //Must return a valid Asset instance.
-    this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
-};
-
-IRIS.Engine.TYPE_1D = '1D';
-IRIS.Engine.TYPE_2D = '2D';
-IRIS.Engine.TYPE_3D = '3D';
-
-IRIS.Engine.prototype = {
-    init: function() {
+        /*Functions to be defined by each Engine specific implementation*/
+        //this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
+        //this.createAsset = opts.createAsset; //Must return a valid Asset instance.
+        //this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
         this.scene = this.getScene();
         this.scene.init();
         IRIS.onEntityCreated(this._createAsset.bind(this));
@@ -43,14 +29,19 @@ IRIS.Engine.prototype = {
     },
     _deleteAsset: function(index, oEntity) {
     },
-    _getAssetProviderInstance: function (assetProviderId) {
-        if (typeof IRIS.ctrl.assetProvider[assetProviderId] !== 'undefined')
-            return new IRIS.ctrl.assetProvider[assetProviderId]();
+    _getAssetProviderInstance: function (id, opts) {
+        if (typeof IRIS.ctrl.assetProvider[id] !== 'undefined')
+            return new IRIS.ctrl.assetProvider[id](opts);
         else
             return false;
     }
-};
+});
 
-IRIS.registerEngine = function(oEngine) {
-    IRIS.ctrl.engine[oEngine.id] = oEngine;
+IRIS.Engine.TYPE_1D = '1D';
+IRIS.Engine.TYPE_2D = '2D';
+IRIS.Engine.TYPE_3D = '3D';
+
+IRIS.ctrl.engine = {};
+IRIS.registerEngine = function(engineClass, id) {
+    IRIS.ctrl.engine[id] = engineClass;
 };

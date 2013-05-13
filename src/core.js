@@ -22,12 +22,24 @@ IRIS.start = function(opts) {
     else if (typeof opts == 'string')
         engineId = opts;
     if (engineId !== '' && typeof IRIS.ctrl.engine[engineId] != 'undefined')
-        IRIS.ctrl.engine[engineId].init();
+        new IRIS.ctrl.engine[engineId]();
         
+};
+
+IRIS._isUndef = function(a) {
+    return (typeof a == 'undefined');
 };
 
 IRIS._areEqual = function(a, b) {
     return (JSON.stringify(a) == JSON.stringify(b));
+};
+
+IRIS._isObject = function(a) {
+    return (typeof a == 'object' && !(a instanceof Array));
+};
+
+IRIS._isArray = function(a) {
+    return (a instanceof Array);
 };
 
 IRIS._bindEvent = function(eventName, fn) {

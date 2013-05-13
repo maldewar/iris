@@ -1,8 +1,10 @@
-var oPlanetariumEngine = new IRIS.Engine({
-        id : 'planetarium',
+IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
         assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
         type: IRIS.Engine.TYPE_3D,
+        init: function(opts) {
+            this._super(opts);
+        },
         getScene: function() {
             return new IRIS.Scene({
                 val:{
@@ -74,4 +76,4 @@ var oPlanetariumEngine = new IRIS.Engine({
         }
     });
 
-IRIS.registerEngine(oPlanetariumEngine);
+IRIS.registerEngine(IRIS.PlanetariumEngine, 'planetarium');

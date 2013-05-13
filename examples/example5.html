@@ -33,6 +33,28 @@ var ent = IRIS.createEntity(arrE);
 
 
 $(document).ready(function(){
+    IRIS.ui.asset= {
+        device: {
+            //entity: 'device',
+            type: 'sphere',
+            class: 'ui-device', //We can extract color from here.
+            //color: '#454545',
+            //color: 'red',
+            //color: {r:255, g:255, b:255, a: 255},
+            //color: new IRIS.Color(1, 1, 1, 1);
+            radius: 12,
+            segments: 6,
+            rings: 6
+        },
+        network: {
+            type: 'sphere',
+            class: 'ui-network',
+            color: '#2222CC',
+            radius: 20,
+            segments: 6,
+            rings: 6
+        }
+    };
     $('#startIrisBtn').button().click(function(){
         IRIS.start('planetarium');
     });
