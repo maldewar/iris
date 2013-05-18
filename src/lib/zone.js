@@ -35,9 +35,14 @@ IRIS.BaseVectorZone = Class.extend({
 IRIS.Vector2Zone = IRIS.BaseVectorZone.extend({
     init: function(opts) {
         this._super(opts);
-        this.rotation = IRIS._setterVector2(opts.rotation, new IRIS.Vector2(0,0));
-        this.position = IRIS._setterVector2(opts.position, new IRIS.Vector2(0,0));
-        this.domain = IRIS._setterUndef(opts.domain, IRIS.ZONE_DOMAIN_XY);
+        this.plane = IRIS._setterUndef(opts.plane, false);
+        if (this.plane) {
+            this.rotation = IRIS._setterVector3(opts.rotation, new IRIS.Vector3(0,0,0));
+            this.position = IRIS._setterVector3(opts.position, new IRIS.Vector3(0,0,0));
+        } else {
+            this.rotation = IRIS._setterVector2(opts.rotation, new IRIS.Vector2(0,0));
+            this.position = IRIS._setterVector2(opts.position, new IRIS.Vector2(0,0));
+        }
     }
 });
 
