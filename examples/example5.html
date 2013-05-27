@@ -44,7 +44,8 @@ $(document).ready(function(){
             //color: new IRIS.Color(1, 1, 1, 1);
             radius: 12,
             segments: 6,
-            rings: 6
+            rings: 6,
+            create: 'haloA'
         },
         network: {
             type: 'sphere',
@@ -52,8 +53,24 @@ $(document).ready(function(){
             color: '#2222CC',
             radius: 20,
             segments: 6,
-            rings: 6
+            rings: 6,
+            create: 'haloB'
         }
+    };
+    IRIS.ui.modifier = {
+        haloA: {
+            asset: 'device',
+            zone: 'circle',
+            zoneOpts: {
+                x: 0,
+                y: 0,
+                z: 0,
+                scale: 100,
+                step: 0.5,
+                plane: 'yz'
+            }
+        },
+        haloB: {}
     };
     $('#startIrisBtn').button().click(function(){
         IRIS.start('planetarium');
