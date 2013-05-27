@@ -110,6 +110,11 @@ IRIS.Vector2.prototype = {
         var x_d = v2.x - this.x;
         var y_d = v2.y - this.y;
         return x_d * x_d + y_d * y_d;
+    },
+    pointTo: function(v2, blend) {
+        var x = this.x + blend * (v2.x - this.x);
+        var y = this.y + blend * (v2.y - this.y);
+        return new IRIS.Vector2(x, y);
     }
 };
 
@@ -216,8 +221,14 @@ IRIS.Vector3.prototype = {
     dist2: function(v3) {
         var x_d = v3.x - this.x;
         var y_d = v3.y - this.y;
-        var z_d = v2.z - this.z;
+        var z_d = v3.z - this.z;
         return x_d * x_d + y_d * y_d + z_d * z_d;
+    },
+    pointTo: function(v3, blend) {
+        var x = this.x + blend * (v3.x - this.x);
+        var y = this.y + blend * (v3.y - this.y);
+        var z = this.z + blend * (v3.z - this.z);
+        return new IRIS.Vector3(x, y, z);
     }
 };
 
