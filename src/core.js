@@ -42,6 +42,10 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._random = function(start, end) {
+    return ((end - start) * Math.random()) + start;
+};
+
 IRIS._bindEvent = function(eventName, fn) {
     if (typeof fn == 'function') {
         if (typeof IRIS.fn[eventName] == 'undefined')
