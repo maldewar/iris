@@ -4,11 +4,11 @@ IRIS.ctrl.assetIns = {}; //stores instances of assets.
 IRIS.ctrl.entAssetRel = {}; //stores the relationship entity-asset.
 
 /* Entity related global events */
-IRIS.EV_ASSET_REGISTERED = 'assetRegistered';
-IRIS.EV_ASSET_UNREGISTERED = 'assetUnregistered';
-IRIS.EV_ASSET_CREATED = 'assetCreated';
-IRIS.EV_ASSET_UPDATED = 'assetUpdated';
-IRIS.EV_ASSET_DELETED = 'assetDeleted';
+IRIS.EV_ASSET_REGISTERED = 'registered';
+IRIS.EV_ASSET_UNREGISTERED = 'unregistered';
+IRIS.EV_ASSET_CREATED = 'created';
+IRIS.EV_ASSET_UPDATED = 'updated';
+IRIS.EV_ASSET_DELETED = 'deleted';
 
 IRIS.Asset = function(opts){
     // Required
