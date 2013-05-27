@@ -1,16 +1,7 @@
 IRIS.Scene = function(opts){
     this.init = opts.init;
-    this.addStates = IRIS._setterUndef(opts.addStates);
-    this.updateStates = IRIS._setterUndef(opts.updateStates);
-    this.removeStates = IRIS._setterUndef(opts.removeStates);
-
-    this.initializer = IRIS._setterUndef(opts.initializer);
-    this.updateSetters = IRIS._setterUndef(opts.updateSetters);
-    this.removeSetters = IRIS._setterUndef(opts.removeSetters);
-
     this.val = opts.val;
     this.obj = {};
-    
 
     this.addAsset = opts.addAsset;
     this.removeAsset = opts.removeAsset;
@@ -21,7 +12,9 @@ IRIS.Scene = function(opts){
     };
 
     //TODO remove misplaced initializer
-    this.line3d = new IRIS.Line3DZone({scale:100});
+    //this.zone = new IRIS.Line3DZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5});
+    //this.zone = new IRIS.RectangleZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5, plane:'xz'});
+    this.zone = new IRIS.RectangleZone({scale:100, step: 0.5, plane:'xz'});
 };
 
 IRIS.Scene.prototype = {
@@ -35,7 +28,7 @@ IRIS.Scene.prototype = {
     _addAsset: function(oAsset) {
         // Apply initializer
         //TODO Handle nicely initializers TODO
-        var v = this.line3d.getStep();
+        var v = this.zone.getStep();
         oAsset.object.position.x = v.x;
         oAsset.object.position.y = v.y;
         oAsset.object.position.z = v.z;
