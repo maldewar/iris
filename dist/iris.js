@@ -42,6 +42,10 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._random = function(start, end) {
+    return ((end - start) * Math.random()) + start;
+};
+
 IRIS._bindEvent = function(eventName, fn) {
     if (typeof fn == 'function') {
         if (typeof IRIS.fn[eventName] == 'undefined')
@@ -763,7 +767,9 @@ IRIS.Scene = function(opts){
     };
 
     //TODO remove misplaced initializer
-    this.line3d = new IRIS.Line3DZone({scale:100});
+    //this.zone = new IRIS.Line3DZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5});
+    //this.zone = new IRIS.RectangleZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5, plane:'xz'});
+    this.zone = new IRIS.RectangleZone({scale:100, step: 0.5, plane:'xz'});
 };
 
 IRIS.Scene.prototype = {
@@ -777,7 +783,7 @@ IRIS.Scene.prototype = {
     _addAsset: function(oAsset) {
         // Apply initializer
         //TODO Handle nicely initializers TODO
-        var v = this.line3d.getStep();
+        var v = this.zone.getStep();
         oAsset.object.position.x = v.x;
         oAsset.object.position.y = v.y;
         oAsset.object.position.z = v.z;
@@ -790,23 +796,36 @@ IRIS.Scene.prototype = {
     }
 };
 
-IRIS.ZONE_TYPE_LINE = 'line';
+IRIS.ZONE_TYPE_LINE_2D = 'line2D';
 IRIS.ZONE_TYPE_CIRCLE = 'circle';
+IRIS.ZONE_TYPE_DISC = 'disc';
+IRIS.ZONE_TYPE_SIN = 'sin';
+IRIS.ZONE_TYPE_COS = 'cos';
+IRIS.ZONE_TYPE_TAN = 'tan';
+IRIS.ZONE_TYPE_SQUARE = 'square';
+IRIS.ZONE_TYPE_VERTEX = 'vertex';
+
+IRIS.ZONE_TYPE_LINE_3D = 'line3D';
+IRIS.ZONE_TYPE_SPHERE = 'sphere';
+IRIS.ZONE_TYPE_BALL = 'ball';
+IRIS.ZONE_TYPE_BOX = 'box';
+IRIS.ZONE_TYPE_CUBE = 'cube';
+IRIS.ZONE_TYPE_SPRING = 'spring';
 
 IRIS.ZONE_PATTERN_RANDOM = 0;
 IRIS.ZONE_PATTERN_LINEAL = 1;
-IRIS.ZONE_PATTERN_SPACE = 2;
 
-IRIS.ZONE_DOMAIN_XY = 'xy';
-IRIS.ZONE_DOMAIN_YZ = 'yz';
-IRIS.ZONE_DOMAIN_XZ = 'xz';
+IRIS.ZONE_PLANE_XY = 'xy';
+IRIS.ZONE_PLANE_YX = 'yx';
+IRIS.ZONE_PLANE_YZ = 'yz';
+IRIS.ZONE_PLANE_ZY = 'zy';
+IRIS.ZONE_PLANE_XZ = 'xz';
+IRIS.ZONE_PLANE_ZX = 'zx';
 
 IRIS.BaseVectorZone = Class.extend({
     init: function(opts) {
-        this.minX = IRIS._setterUndef(opts.minX,0);
-        this.maxX = IRIS._setterUndef(opts.maxX,1);
-        this.minY = IRIS._setterUndef(opts.minY,0);
-        this.maxY = IRIS._setterUndef(opts.maxY,1);
+        this.x = IRIS._setterUndef(opts.x,0);
+        this.y = IRIS._setterUndef(opts.y,0);
         this.pattern = IRIS._setterUndef(opts.pattern,IRIS.ZONE_PATTERN_RANDOM);
         this.step = IRIS._setterUndef(opts.step, 0.1);
         this.scale = IRIS._setterUndef(opts.scale, 1);
@@ -816,27 +835,116 @@ IRIS.BaseVectorZone = Class.extend({
 IRIS.Vector2Zone = IRIS.BaseVectorZone.extend({
     init: function(opts) {
         this._super(opts);
-        this.rotation = IRIS._setterVector2(opts.rotation, new IRIS.Vector2(0,0));
-        this.position = IRIS._setterVector2(opts.position, new IRIS.Vector2(0,0));
-        this.domain = IRIS._setterUndef(opts.domain, IRIS.ZONE_DOMAIN_XY);
+        this.plane = IRIS._setterUndef(opts.plane, false);
+        if (this.plane) {
+            this.rotation = IRIS._setterVector3(opts.rotation, new IRIS.Vector3(0,0,0));
+            this.position = IRIS._setterVector3(opts.position, new IRIS.Vector3(0,0,0));
+        } else {
+            this.rotation = IRIS._setterVector2(opts.rotation, new IRIS.Vector2(0,0));
+            this.position = IRIS._setterVector2(opts.position, new IRIS.Vector2(0,0));
+        }
+    },
+    _vector2ToPlane: function(x, y, plane) {
+        if (x instanceof IRIS.Vector2) {
+            plane = y;
+            y = x.y;
+            x = x.x;
+        }
+        switch (plane) {
+            case IRIS.ZONE_PLANE_YX:
+                return new IRIS.Vector3(y, x, 0);
+            case IRIS.ZONE_PLANE_YZ:
+                return new IRIS.Vector3(0, x, y);
+            case IRIS.ZONE_PLANE_ZY:
+                return new IRIS.Vector3(0, y, x);
+            case IRIS.ZONE_PLANE_XZ:
+                return new IRIS.Vector3(x, 0, y);
+            case IRIS.ZONE_PLANE_ZX:
+                return new IRIS.Vector3(y, 0, x);
+            default:
+                return new IRIS.Vector3(x, y, 0);
+        }
     }
 });
 
 IRIS.Vector3Zone = IRIS.BaseVectorZone.extend({
     init: function(opts) {
         this._super(opts);
-        this.minZ = IRIS._setterUndef(opts.minZ,0);
-        this.maxZ = IRIS._setterUndef(opts.maxZ,1);
+        this.z = IRIS._setterUndef(opts.z,0);
         this.rotation = IRIS._setterVector3(opts.rotation, new IRIS.Vector3(0,0,0));
         this.position = IRIS._setterVector3(opts.position, new IRIS.Vector3(0,0,0));
     }
 });
 
-
 IRIS.ctrl.zone = {};
 IRIS.registerZone = function(zoneClass, id) {
     IRIS.ctrl.zone[id] = zoneClass;
 };
+
+
+IRIS.VertexZone = IRIS.Vector2Zone.extend({
+    init: function(opts) {
+        opts = IRIS._setterUndef(opts, {});
+        this._super(opts);
+        if (!IRIS._isUndef(opts.vertices))
+            this.setVertices(opts.vertices);
+        this._stepVector = 0;
+    },
+    setVertices: function(vertices) {
+        var defVec = new IRIS.Vector2(0, 0);
+        if (IRIS._isArray(vertices)) {
+            for(var key in vertices) {
+                vertices[key] = IRIS._setterVector2(vertices[key], defVec);
+                if (this.plane)
+                    vertices[key] = this._vector2ToPlane(vertices[key], this.plane);
+            }
+            this.vertices = vertices;
+            this._lengths = [];
+            this._sumLengths = [];
+            this._length = 0;
+            var nextVertex;
+            for(var i = 0; i < this.vertices.length; i++) {
+                if (i == this.vertices.length-1)
+                    nextVertex = this.vertices[0];
+                else
+                    nextVertex = this.vertices[i+1];
+                var length = this.vertices[i].dist(nextVertex);
+                this._lengths.push(length);
+                this._sumLengths.push(this._length);
+                this._length += length;
+            }
+        } else {
+            this.vertices = false;
+        }
+    },
+    getStep: function() {
+        if (this.pattern == IRIS.ZONE_PATTERN_RANDOM) {
+            this._stepVector = IRIS._random(0, this._length);
+        } else {
+            this._stepVector += this.step;
+            if (this._stepVector > this._length)
+                this._stepVector -= this._length;
+        }
+        return this._getPointAtLength(this._stepVector);;
+    },
+    _getPointAtLength: function(length) {
+        var index = 0;
+        for(var i = 0;i <= this._sumLengths.length; i++)
+            if (length > this._sumLengths[i])
+                index=i;
+            else
+                break;
+        var startVertex = this.vertices[index];
+        if (index == this.vertices.length-1)
+            var endVertex = this.vertices[0];
+        else
+            var endVertex = this.vertices[index+1];
+        var blend = (length - this._sumLengths[index])/this._lengths[index];
+        return startVertex.pointTo(endVertex, blend).mul(this.scale);
+    }
+});
+
+IRIS.registerZone(IRIS.VertexZone, IRIS.ZONE_TYPE_VERTEX);
 
 IRIS.ScaleInitializer = IRIS.SingleValueInitializer.extend({
     init: function(opts) {
@@ -847,22 +955,126 @@ IRIS.ScaleInitializer = IRIS.SingleValueInitializer.extend({
     }
 });
 
-IRIS.Line3DZone = IRIS.Vector3Zone.extend({
+IRIS.CircleZone = IRIS.Vector2Zone.extend({
     init: function(opts) {
         opts = IRIS._setterUndef(opts, {});
         this._super(opts);
-        this._start = new IRIS.Vector3(this.minX, this.minY, this.minZ);
-        this._end = new IRIS.Vector3(this.maxX, this.maxY, this.maxZ);
+        this.radius = IRIS._setterUndef(opts.radius,1);
+        this._stepVector = 0;
+    },
+    getStep: function() {
+        if (this.pattern == IRIS.ZONE_PATTERN_RANDOM)
+            var theta = Math.PI * 2 * Math.random();
+        else {
+            var theta = this._stepVector;
+            this._stepVector += this.step;
+        }
+        return new IRIS.Vector3(this.radius * Math.cos(theta) * this.scale + this.x, this.radius * Math.sin(theta) * this.scale + this.y, 0);
+    }
+});
+
+IRIS.registerZone(IRIS.CircleZone, IRIS.ZONE_TYPE_LINE_2D);
+
+IRIS.Line2DZone = IRIS.Vector2Zone.extend({
+    init: function(opts) {
+        opts = IRIS._setterUndef(opts, {});
+        this._super(opts);
+        this.toX = IRIS._setterUndef(opts.toX,1);
+        this.toY = IRIS._setterUndef(opts.toY,1);
+        if (this.plane) {
+            this._start = this._vector2ToPlane(this.x, this.y, this.plane);
+            this._end = this._vector2ToPlane(this.toX, this.toY, this.plane);
+        } else {
+            this._start = new IRIS.Vector2(this.x, this.y);
+            this._end = new IRIS.Vector2(this.toX, this.toY);
+        }
         this._len = this._end.clone().sub(this._start);
+        this._stepVector = 0;
     },
     getStep: function() {
         var len = this._len.clone();
-        len.mul(Math.random());
+        if (this.pattern == IRIS.ZONE_PATTERN_RANDOM)
+            len.mul(Math.random());
+        else {
+            len.mul(this._stepVector)
+            this._stepVector += this.step;
+        }
         return len.add(this._start).mul(this.scale);
     }
 });
 
-IRIS.registerZone(IRIS.Line3DZone, 'line3D');
+IRIS.registerZone(IRIS.Line2DZone, IRIS.ZONE_TYPE_LINE_2D);
+
+IRIS.Line3DZone = IRIS.Vector3Zone.extend({
+    init: function(opts) {
+        opts = IRIS._setterUndef(opts, {});
+        this._super(opts);
+        this.toX = IRIS._setterUndef(opts.toX,1);
+        this.toY = IRIS._setterUndef(opts.toY,1);
+        this.toZ = IRIS._setterUndef(opts.toZ,1);
+        this._start = new IRIS.Vector3(this.x, this.y, this.z);
+        this._end = new IRIS.Vector3(this.toX, this.toY, this.toZ);
+        this._len = this._end.clone().sub(this._start);
+        this._stepVector = 0;
+    },
+    getStep: function() {
+        var len = this._len.clone();
+        if (this.pattern == IRIS.ZONE_PATTERN_RANDOM)
+            len.mul(Math.random());
+        else {
+            len.mul(this._stepVector)
+            this._stepVector += this.step;
+        }
+        return len.add(this._start).mul(this.scale);
+    }
+});
+
+IRIS.registerZone(IRIS.Line3DZone, IRIS.ZONE_TYPE_LINE_3D);
+
+IRIS.RectangleZone = IRIS.VertexZone.extend({
+    init: function(opts) {
+        opts = IRIS._setterUndef(opts, {});
+        this._super(opts);
+        this.lengthX = IRIS._setterUndef(opts.lengthX, 1);
+        this.lengthY = IRIS._setterUndef(opts.lengthY, 1);
+        var vertices = [
+            {x: this.x + this.lengthX/2, y: this.y + this.lengthY/2},
+            {x: this.x - this.lengthX/2, y: this.y + this.lengthY/2},
+            {x: this.x - this.lengthX/2, y: this.y - this.lengthY/2},
+            {x: this.x + this.lengthX/2, y: this.y - this.lengthY/2},          
+        ];
+        this.setVertices(vertices);
+    },
+    getStep: function() {
+        return this._super();
+    }
+});
+
+IRIS.registerZone(IRIS.RectangleZone, IRIS.ZONE_TYPE_RECTANGLE);
+
+IRIS.SphereZone = IRIS.Vector3Zone.extend({
+    init: function(opts) {
+        opts = IRIS._setterUndef(opts, {});
+        this._super(opts);
+        this.radius = IRIS._setterUndef(opts.radius,1);
+        this._stepVector = 0;
+    },
+    getStep: function() {
+        if (this.pattern == IRIS.ZONE_PATTERN_RANDOM) {
+            var theta = Math.PI * 2 * Math.random();
+            var phi = theta;
+        } else {
+            var theta = this._stepVector;
+            var phi = this._stepVector;
+            this._stepVector += this.step;
+        }
+        return new IRIS.Vector3(this.radius * Math.cos(phi) * Math.sin(theta) * this.scale + this.x,
+                                this.radius * Math.sin(phi) * Math.sin(theta) * this.scale + this.y,
+                                this.radius * Math.cos(theta) * this.scale + this.z);
+    }
+});
+
+IRIS.registerZone(IRIS.SphereZone, IRIS.ZONE_TYPE_SPHERE);
 
 IRIS.ThreejsAssetProvider = IRIS.assetProvider.extend({
     init: function(opts) {
@@ -1012,6 +1224,11 @@ IRIS.Vector2.prototype = {
         var x_d = v2.x - this.x;
         var y_d = v2.y - this.y;
         return x_d * x_d + y_d * y_d;
+    },
+    pointTo: function(v2, blend) {
+        var x = this.x + blend * (v2.x - this.x);
+        var y = this.y + blend * (v2.y - this.y);
+        return new IRIS.Vector2(x, y);
     }
 };
 
@@ -1118,8 +1335,14 @@ IRIS.Vector3.prototype = {
     dist2: function(v3) {
         var x_d = v3.x - this.x;
         var y_d = v3.y - this.y;
-        var z_d = v2.z - this.z;
+        var z_d = v3.z - this.z;
         return x_d * x_d + y_d * y_d + z_d * z_d;
+    },
+    pointTo: function(v3, blend) {
+        var x = this.x + blend * (v3.x - this.x);
+        var y = this.y + blend * (v3.y - this.y);
+        var z = this.z + blend * (v3.z - this.z);
+        return new IRIS.Vector3(x, y, z);
     }
 };
 
