@@ -35,10 +35,13 @@ IRIS.ModifierProvider = Class.extend({
             if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
                 //TODO: implement concept of shared and private modifiers
                 //IF shared we create an instance of a modifier bound to this provider
-                if (IRIS._isUndef(this._modifierIns[modifierIds[key]])) {
-                    this._modifierIns[modifierIds[key]] = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
+                var modifierIns = this._modifierIns[modifierIds[key]];
+                if (IRIS._isUndef(modifierIns)) {
+                    modifierIns = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
+                    this._modifierIns[modifierIds[key]] = modifierIns;
                 }
-                this._modifierIns[modifierIds[key]].apply(oAsset);
+                if (modifierIns)
+                    modifierIns.apply(oAsset);
             }
         }
     },

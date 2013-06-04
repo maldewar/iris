@@ -45,7 +45,7 @@ $(document).ready(function(){
             radius: 12,
             segments: 6,
             rings: 6,
-            create: 'haloA'
+            create: ['haloA','inflation']
         },
         network: {
             type: 'sphere',
@@ -54,9 +54,10 @@ $(document).ready(function(){
             radius: 20,
             segments: 6,
             rings: 6,
-            create: 'haloB'
+            create: ['haloB','inflation']
         }
     };
+    // POSITION
     IRIS.ui.modifier = {
         haloA: {
             target: 'position',
@@ -81,7 +82,51 @@ $(document).ready(function(){
                 step: 2,
                 plane: 'xy'
             }
+        },
+        // Position randomly on a halo.
+        positionA: {
+            target:'pasition',
+            from:{x:200, y:200, z:200},
+            zone: 'circle',
+            scale: 200,
+            step: 2,
+            plane: 'xy'
+        },
+        //From center to surface of a sphere.
+        positionB: {
+            target:'position',
+            to:{zone:'sphere', radius: 400},
+            //easing: 'exp.Out',
+            //lapse: 400
+        },
+        // Position from zone to zone
+        positionC: {
+            target: 'position',
+            from: {
+                zone: 'circle',
+                x: 100, 
+                y: 100, 
+                z: 100,
+                scale: 200,
+                step: 2,
+                plane: 'xy'
+            },
+            to: {
+                x: 300,
+                y: 500,
+                z: 600
+            },
+            easing: 'linear',
+            lapse: 400
         }
+    };
+    // SCALE
+    IRIS.ui.modifier.inflation = {
+        target: 'scale',
+        from: 0,
+        to: 1,
+        easing: 'lineal',
+        lapse: 400
     };
     $('#startIrisBtn').button().click(function(){
         IRIS.start('planetarium');
