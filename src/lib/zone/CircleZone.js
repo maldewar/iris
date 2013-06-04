@@ -16,4 +16,4 @@ IRIS.CircleZone = IRIS.Vector2Zone.extend({
     }
 });
 
-IRIS.registerZone(IRIS.CircleZone, IRIS.ZONE_TYPE_LINE_2D);
+IRIS.registerZone(IRIS.CircleZone, IRIS.ZONE_TYPE_CIRCLE);
