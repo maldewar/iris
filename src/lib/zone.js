@@ -5,6 +5,7 @@ IRIS.ZONE_TYPE_SIN = 'sin';
 IRIS.ZONE_TYPE_COS = 'cos';
 IRIS.ZONE_TYPE_TAN = 'tan';
 IRIS.ZONE_TYPE_SQUARE = 'square';
+IRIS.ZONE_TYPE_RECTANGLE = 'rectangle';
 IRIS.ZONE_TYPE_VERTEX = 'vertex';
 
 IRIS.ZONE_TYPE_LINE_3D = 'line3D';
@@ -81,6 +82,11 @@ IRIS.Vector3Zone = IRIS.BaseVectorZone.extend({
 IRIS.ctrl.zone = {};
 IRIS.registerZone = function(zoneClass, id) {
     IRIS.ctrl.zone[id] = zoneClass;
+};
+IRIS.getZone = function(id, opts) {
+    if (IRIS._isUndef(IRIS.ctrl.zone[id]))
+        return false;
+    return new IRIS.ctrl.zone[id](opts);
 };
 
 
