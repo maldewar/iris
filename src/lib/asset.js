@@ -25,6 +25,9 @@ IRIS.Asset = function(opts){
     this.parent = false;
     this.style = [];
     this.state = [];
+    this.createModifier = IRIS._setterUndef(opts.createModifier, false);
+    this.updateModifier = IRIS._setterUndef(opts.updateModifier, false);
+    this.deleteModifier = IRIS._setterUndef(opts.deleteModifier, false);
 };
 
 IRIS.Asset.prototype = {
