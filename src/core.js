@@ -42,6 +42,14 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._valueToArray = function(a) {
+    if (a instanceof Array)
+        return a;
+    if (typeof a !== 'undefined')
+        return [a];
+    return [];
+};
+
 IRIS._random = function(start, end) {
     return ((end - start) * Math.random()) + start;
 };
