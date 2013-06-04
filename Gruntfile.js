@@ -14,6 +14,8 @@ module.exports = function(grunt) {
                       'src/lib/initializer/*.js',
                       'src/lib/zone/*.js',
                       'src/lib/assetProvider/*.js',
+                      'src/lib/modifierProvider/*.js',
+                      'src/lib/modifier/*.js',
                       'src/ui.core.js',
                       'src/engine/*.js'],
                 // the location of the resulting JS file
