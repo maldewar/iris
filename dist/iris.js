@@ -42,6 +42,14 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._valueToArray = function(a) {
+    if (a instanceof Array)
+        return a;
+    if (typeof a !== 'undefined')
+        return [a];
+    return [];
+};
+
 IRIS._random = function(start, end) {
     return ((end - start) * Math.random()) + start;
 };
@@ -162,11 +170,11 @@ IRIS.ctrl.assetIns = {}; //stores instances of assets.
 IRIS.ctrl.entAssetRel = {}; //stores the relationship entity-asset.
 
 /* Entity related global events */
-IRIS.EV_ASSET_REGISTERED = 'assetRegistered';
-IRIS.EV_ASSET_UNREGISTERED = 'assetUnregistered';
-IRIS.EV_ASSET_CREATED = 'assetCreated';
-IRIS.EV_ASSET_UPDATED = 'assetUpdated';
-IRIS.EV_ASSET_DELETED = 'assetDeleted';
+IRIS.EV_ASSET_REGISTERED = 'registered';
+IRIS.EV_ASSET_UNREGISTERED = 'unregistered';
+IRIS.EV_ASSET_CREATED = 'created';
+IRIS.EV_ASSET_UPDATED = 'updated';
+IRIS.EV_ASSET_DELETED = 'deleted';
 
 IRIS.Asset = function(opts){
     // Required
@@ -183,6 +191,9 @@ IRIS.Asset = function(opts){
     this.parent = false;
     this.style = [];
     this.state = [];
+    this.createModifier = IRIS._setterUndef(opts.createModifier, false);
+    this.updateModifier = IRIS._setterUndef(opts.updateModifier, false);
+    this.deleteModifier = IRIS._setterUndef(opts.deleteModifier, false);
 };
 
 IRIS.Asset.prototype = {
@@ -211,10 +222,15 @@ IRIS.assetProvider = Class.extend({
         if (typeof this._assetIns[oEntity.id] !== 'undefined' && 
             typeof this._assetIns[oEntity.id][index] !== 'undefined')
             return this._assetIns[oEntity.id][index];
+        var assetId = this.getAssetId(index, data, oEntity);
+        var assetOpts = this.getAssetOpts(assetId);
         var oAsset = new IRIS.Asset({
-                        id: this.getAssetId(index, data, oEntity),
+                        id: assetId,
                         index: index,
                         object: this.getAssetObject(index, data, oEntity),
+                        createModifier: assetOpts.create,
+                        updateModifier: assetOpts.update,
+                        deletemodifier: assetOpts.delete,
                         data: data});
         return oAsset;
     },
@@ -233,6 +249,9 @@ IRIS.assetProvider = Class.extend({
             if (typeof opts.entity == 'undefined')
                 opts.entity = assetId;
         }
+        opts.create = IRIS._valueToArray(opts.create);
+        opts.update = IRIS._valueToArray(opts.update);
+        opts.delete = IRIS._valueToArray(opts.delete);
         return opts;
         //TODO: normalize other options for assets, such as color.
     },
@@ -443,8 +462,10 @@ IRIS.Engine = Class.extend({
     init: function(opts) {
         this.isRunning = false;
         //this.scene = opts.scene;
-        this.assetProvider = this._getAssetProviderInstance(this.assetProvider, IRIS.ui.asset);
-
+        this.assetProvider = this._getAssetProviderInstance(this.assetProvider,
+                                IRIS.ui.asset); //TODO pass opts as second param.
+        this.modifierProvider = this._getModifierProviderInstance(this.modifierProvider,
+                                IRIS.ui.modifier); //TODO pass opts as second param.
         /*Functions to be defined by each Engine specific implementation*/
         //this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
         //this.createAsset = opts.createAsset; //Must return a valid Asset instance.
@@ -463,6 +484,7 @@ IRIS.Engine = Class.extend({
     },
     _createAsset: function(index, data, oEntity) {
         var oAsset = this.assetProvider.getAsset(index, data, oEntity);
+        this.modifierProvider.apply(oAsset,oAsset.createModifier);
         this.populateAsset(oAsset);
         this.scene._addAsset(oAsset);
     },
@@ -473,6 +495,12 @@ IRIS.Engine = Class.extend({
     _getAssetProviderInstance: function (id, opts) {
         if (typeof IRIS.ctrl.assetProvider[id] !== 'undefined')
             return new IRIS.ctrl.assetProvider[id](opts);
+        else
+            return false;
+    },
+    _getModifierProviderInstance: function(id, opts) {
+        if (typeof IRIS.ctrl.modifierProvider[id] !== 'undefined')
+            return new IRIS.ctrl.modifierProvider[id](opts);
         else
             return false;
     }
@@ -744,19 +772,99 @@ IRIS.TripleValueInitializer = IRIS.DoubleValueInitializer.extend({
     }
 });
 
+IRIS.MODIFIER_TARGET_POSITION = 'position';
+IRIS.MODIFIER_TARGET_SCALE = 'scale';
+IRIS.MODIFIER_TARGET_COLOR = 'color';
+IRIS.MODIFIER_TARGET_SIZE = 'size';
+IRIS.MODIFIER_TARGET_ROTATION = 'rotation';
+
+IRIS.Modifier = Class.extend({
+    init: function(opts) {
+        this.id = opts.id;
+        this.target = opts.target;
+        this.zone = IRIS.getZone(opts.zone, opts.zoneOpts);
+        //this.tween = this.getTween(opts.tween, opts.tweenOpts);
+    }
+});
+
+IRIS.ModifierProvider = Class.extend({
+    _modifierIns: {},
+    //_entityAsset: {},
+    _modifierOpts: {},
+    init: function(opts) {
+        if (IRIS._isObject(opts)) {
+            for(var key in opts) {
+                opts[key] = this._normalizeOpts(key, opts[key]);
+                //this._registerEntityAssetRel(key,opts[key].entity);
+                this._registerModifierOpts(key, opts[key]);
+            }
+        }
+    },
+    getModifier: function(id) {
+        if (typeof this._modifierIns[id] !== 'undefined')
+            return this._modifierIns[id];
+        var opts = this.getModifierOpts(id);
+        if (opts) {
+            switch (opts.target) {
+                default:
+                    var oModifier = this._getModifier('id', opts);
+            }
+            /*var oModifier = new IRIS.Modifier({
+                            id: id,
+                            target: opts.target,
+                            zone: opts.zone,
+                            zoneOpts: opts.zoneOpts});*/
+            this._modifierIns[id] = oModifier;
+            return oModifier;
+        }
+        return false;
+    },
+    apply: function(oAsset, modifierIds) {
+        for(var key in modifierIds) {
+            if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
+                //TODO: implement concept of shared and private modifiers
+                //IF shared we create an instance of a modifier bound to this provider
+                if (IRIS._isUndef(this._modifierIns[modifierIds[key]])) {
+                    this._modifierIns[modifierIds[key]] = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
+                }
+                this._modifierIns[modifierIds[key]].apply(oAsset);
+            }
+        }
+    },
+    getModifierOpts: function(id) {
+        if (!IRIS._isUndef(this._modifierOpts[id]))
+            return this._modifierOpts[id];
+        return false;
+    },
+    _getModifierInstance: function(opts) {
+        switch(opts.target) {
+            case IRIS.MODIFIER_TARGET_POSITION:
+                return new IRIS.ThreejsPositionModifier(opts);
+            default:
+                return false;
+        }
+    },
+    _normalizeOpts: function(modifierId, opts) {
+        if (typeof opts == 'object') {
+            if (typeof opts.id == 'undefined')
+                opts.id = modifierId;
+        }
+        return opts;
+    },
+    _registerModifierOpts: function(modifierId, opts) {
+        this._modifierOpts[modifierId] = opts;
+    }
+});
+
+IRIS.ctrl.modifierProvider = {};
+IRIS.registerModifierProvider = function(modifierProviderClass, id) {
+    IRIS.ctrl.modifierProvider[id] = modifierProviderClass;
+};
+
 IRIS.Scene = function(opts){
     this.init = opts.init;
-    this.addStates = IRIS._setterUndef(opts.addStates);
-    this.updateStates = IRIS._setterUndef(opts.updateStates);
-    this.removeStates = IRIS._setterUndef(opts.removeStates);
-
-    this.initializer = IRIS._setterUndef(opts.initializer);
-    this.updateSetters = IRIS._setterUndef(opts.updateSetters);
-    this.removeSetters = IRIS._setterUndef(opts.removeSetters);
-
     this.val = opts.val;
     this.obj = {};
-    
 
     this.addAsset = opts.addAsset;
     this.removeAsset = opts.removeAsset;
@@ -765,11 +873,6 @@ IRIS.Scene = function(opts){
     this.ctrl = {
         asset:{}
     };
-
-    //TODO remove misplaced initializer
-    //this.zone = new IRIS.Line3DZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5});
-    //this.zone = new IRIS.RectangleZone({scale:100, pattern: IRIS.ZONE_PATTERN_LINEAL, step: 0.5, plane:'xz'});
-    this.zone = new IRIS.RectangleZone({scale:100, step: 0.5, plane:'xz'});
 };
 
 IRIS.Scene.prototype = {
@@ -781,12 +884,6 @@ IRIS.Scene.prototype = {
             return false;
     },
     _addAsset: function(oAsset) {
-        // Apply initializer
-        //TODO Handle nicely initializers TODO
-        var v = this.zone.getStep();
-        oAsset.object.position.x = v.x;
-        oAsset.object.position.y = v.y;
-        oAsset.object.position.z = v.z;
         this.addAsset(oAsset);
     },
     _removeAsset: function() {
@@ -803,6 +900,7 @@ IRIS.ZONE_TYPE_SIN = 'sin';
 IRIS.ZONE_TYPE_COS = 'cos';
 IRIS.ZONE_TYPE_TAN = 'tan';
 IRIS.ZONE_TYPE_SQUARE = 'square';
+IRIS.ZONE_TYPE_RECTANGLE = 'rectangle';
 IRIS.ZONE_TYPE_VERTEX = 'vertex';
 
 IRIS.ZONE_TYPE_LINE_3D = 'line3D';
@@ -879,6 +977,11 @@ IRIS.Vector3Zone = IRIS.BaseVectorZone.extend({
 IRIS.ctrl.zone = {};
 IRIS.registerZone = function(zoneClass, id) {
     IRIS.ctrl.zone[id] = zoneClass;
+};
+IRIS.getZone = function(id, opts) {
+    if (IRIS._isUndef(IRIS.ctrl.zone[id]))
+        return false;
+    return new IRIS.ctrl.zone[id](opts);
 };
 
 
@@ -973,7 +1076,7 @@ IRIS.CircleZone = IRIS.Vector2Zone.extend({
     }
 });
 
-IRIS.registerZone(IRIS.CircleZone, IRIS.ZONE_TYPE_LINE_2D);
+IRIS.registerZone(IRIS.CircleZone, IRIS.ZONE_TYPE_CIRCLE);
 
 IRIS.Line2DZone = IRIS.Vector2Zone.extend({
     init: function(opts) {
@@ -1111,6 +1214,43 @@ IRIS.ThreejsAssetProvider = IRIS.assetProvider.extend({
 });
 
 IRIS.registerAssetProvider(IRIS.ThreejsAssetProvider, 'threejs');
+
+IRIS.ThreejsModifierProvider = IRIS.ModifierProvider.extend({
+    init: function(opts) {
+        this._super(opts);
+    },
+    _getModifier: function(id, opt) {
+        var oModifier = new IRIS.Modifier({
+                            id: id,
+                            target: opts.target,
+                            zone: opts.zone,
+                            zoneOpts: opts.zoneOpts});
+        return oModifier;
+    }
+
+});
+
+IRIS.registerModifierProvider(IRIS.ThreejsModifierProvider, 'threejs');
+
+IRIS.MODIFIER_TARGET_POSITION = 'position';
+IRIS.MODIFIER_TARGET_SCALE = 'scale';
+IRIS.MODIFIER_TARGET_COLOR = 'color';
+IRIS.MODIFIER_TARGET_SIZE = 'size';
+IRIS.MODIFIER_TARGET_ROTATION = 'rotation';
+
+IRIS.ThreejsPositionModifier = IRIS.Modifier.extend({
+    init: function(opts) {
+        this._super(opts);
+    },
+    apply: function(oAsset) {
+        var v = this.zone.getStep();
+        oAsset.position = v;
+        oAsset.object.position.x = v.x;
+        oAsset.object.position.y = v.y;
+        oAsset.object.position.z = v.z;
+    }
+    //apply (should be implemented by the extending class)
+});
 
 IRIS.ui = {};
 IRIS.ui.asset = {};
@@ -1585,6 +1725,8 @@ IRIS.registerEngine(oConsoleEngine);*/
 IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
         assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
+        modifierProvider: 'threejs',
+        modifierProviderOpts: {},
         type: IRIS.Engine.TYPE_3D,
         init: function(opts) {
             this._super(opts);
