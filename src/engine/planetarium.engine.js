@@ -1,6 +1,8 @@
 IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
         assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
+        modifierProvider: 'threejs',
+        modifierProviderOpts: {},
         type: IRIS.Engine.TYPE_3D,
         init: function(opts) {
             this._super(opts);
