@@ -15,10 +15,15 @@ IRIS.assetProvider = Class.extend({
         if (typeof this._assetIns[oEntity.id] !== 'undefined' && 
             typeof this._assetIns[oEntity.id][index] !== 'undefined')
             return this._assetIns[oEntity.id][index];
+        var assetId = this.getAssetId(index, data, oEntity);
+        var assetOpts = this.getAssetOpts(assetId);
         var oAsset = new IRIS.Asset({
-                        id: this.getAssetId(index, data, oEntity),
+                        id: assetId,
                         index: index,
                         object: this.getAssetObject(index, data, oEntity),
+                        createModifier: assetOpts.create,
+                        updateModifier: assetOpts.update,
+                        deletemodifier: assetOpts.delete,
                         data: data});
         return oAsset;
     },
@@ -37,6 +42,9 @@ IRIS.assetProvider = Class.extend({
             if (typeof opts.entity == 'undefined')
                 opts.entity = assetId;
         }
+        opts.create = IRIS._valueToArray(opts.create);
+        opts.update = IRIS._valueToArray(opts.update);
+        opts.delete = IRIS._valueToArray(opts.delete);
         return opts;
         //TODO: normalize other options for assets, such as color.
     },
