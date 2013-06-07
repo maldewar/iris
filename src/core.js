@@ -42,6 +42,14 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._isNumber = function(a) {
+    return (typeof a == 'number');
+};
+
+IRIS._isString = function(a) {
+    return (typeof a == 'string');
+};
+
 IRIS._valueToArray = function(a) {
     if (a instanceof Array)
         return a;
