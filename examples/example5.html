@@ -45,7 +45,7 @@ $(document).ready(function(){
             radius: 12,
             segments: 6,
             rings: 6,
-            create: ['haloA','inflation']
+            create: ['haloC','inflation']
         },
         network: {
             type: 'sphere',
@@ -62,27 +62,27 @@ $(document).ready(function(){
         haloA: {
             target: 'position',
             zone: 'circle',
-            zoneOpts: {
-                x: 100,
-                y: 100,
-                z: 100,
-                scale: 100,
-                step: 0.5,
-                plane: 'xz'
-            }
+            from: {x:100, y:100, z: 100},
+            scale: 100,
+            step: 0.5,
+            plane: 'xz'
         },
         haloB: {
             target: 'position',
             zone: 'circle',
-            zoneOpts: {
-                x: 0,
-                y: 0,
-                z: 0,
-                scale:200,
-                step: 2,
-                plane: 'xy'
-            }
+            from: {x:0,y:0,z:0},
+            scale: 200,
+            step: 2,
+            plane: 'xy'
         },
+        haloC: {
+            target: 'position',
+            from: {zone: 'circle', radius: 100, x:100, y:100, z: 100}, //TODO: set position before move modifier to tween
+            to: {zone: 'sphere', pattern:1, radius: 300, x:100, y:100, z: 100},
+            lapse: 9000,
+            easing: 'elastic'
+        },
+        
         // Position randomly on a halo.
         positionA: {
             target:'pasition',
