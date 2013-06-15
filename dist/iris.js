@@ -42,6 +42,18 @@ IRIS._isArray = function(a) {
     return (a instanceof Array);
 };
 
+IRIS._isNumber = function(a) {
+    return (typeof a == 'number');
+};
+
+IRIS._isString = function(a) {
+    return (typeof a == 'string');
+};
+
+IRIS._isFn = function(a) {
+    return (typeof a == 'function');
+};
+
 IRIS._valueToArray = function(a) {
     if (a instanceof Array)
         return a;
@@ -98,6 +110,711 @@ IRIS._setterVector3 = function(values, def) {
     else
         return def;
 };
+
+IRIS._parseNamespace = function(value) {
+    var elems = {namespace:'',entity:''};
+    if (IRIS._isString(value)) {
+        var pos = value.lastIndexOf('.');
+        if (pos == -1)
+            elems.entity = value;
+        else {
+            elems.entity = value.substring(pos+1);
+            elems.namespace = value.substring(0,pos);
+        }
+    }
+    return elems;
+};
+
+/**
+ * @author sole / http://soledadpenades.com
+ * @author mrdoob / http://mrdoob.com
+ * @author Robert Eisele / http://www.xarg.org
+ * @author Philippe / http://philippe.elsass.me
+ * @author Robert Penner / http://www.robertpenner.com/easing_terms_of_use.html
+ * @author Paul Lewis / http://www.aerotwist.com/
+ * @author lechecacharro
+ * @author Josh Faul / http://jocafa.com/
+ * @author egraether / http://egraether.com/
+ * @author endel / http://endel.me
+ */
+
+var TWEEN = TWEEN || ( function () {
+
+	var _tweens = [];
+
+	return {
+
+		REVISION: '10',
+
+		getAll: function () {
+
+			return _tweens;
+
+		},
+
+		removeAll: function () {
+
+			_tweens = [];
+
+		},
+
+		add: function ( tween ) {
+
+			_tweens.push( tween );
+
+		},
+
+		remove: function ( tween ) {
+
+			var i = _tweens.indexOf( tween );
+
+			if ( i !== -1 ) {
+
+				_tweens.splice( i, 1 );
+
+			}
+
+		},
+
+		update: function ( time ) {
+
+			if ( _tweens.length === 0 ) return false;
+
+			var i = 0, numTweens = _tweens.length;
+
+			time = time !== undefined ? time : ( window.performance !== undefined && window.performance.now !== undefined ? window.performance.now() : Date.now() );
+
+			while ( i < numTweens ) {
+
+				if ( _tweens[ i ].update( time ) ) {
+
+					i ++;
+
+				} else {
+
+					_tweens.splice( i, 1 );
+
+					numTweens --;
+
+				}
+
+			}
+
+			return true;
+
+		}
+	};
+
+} )();
+
+TWEEN.Tween = function ( object ) {
+
+	var _object = object;
+	var _valuesStart = {};
+	var _valuesEnd = {};
+	var _valuesStartRepeat = {};
+	var _duration = 1000;
+	var _repeat = 0;
+	var _delayTime = 0;
+	var _startTime = null;
+	var _easingFunction = TWEEN.Easing.Linear.None;
+	var _interpolationFunction = TWEEN.Interpolation.Linear;
+	var _chainedTweens = [];
+	var _onStartCallback = null;
+	var _onStartCallbackFired = false;
+	var _onUpdateCallback = null;
+	var _onCompleteCallback = null;
+
+	// Set all starting values present on the target object
+	for ( var field in object ) {
+
+		_valuesStart[ field ] = parseFloat(object[field], 10);
+
+	}
+
+	this.to = function ( properties, duration ) {
+
+		if ( duration !== undefined ) {
+
+			_duration = duration;
+
+		}
+
+		_valuesEnd = properties;
+
+		return this;
+
+	};
+
+	this.start = function ( time ) {
+
+		TWEEN.add( this );
+
+		_onStartCallbackFired = false;
+
+		_startTime = time !== undefined ? time : (window.performance !== undefined && window.performance.now !== undefined ? window.performance.now() : Date.now() );
+		_startTime += _delayTime;
+
+		for ( var property in _valuesEnd ) {
+
+			// check if an Array was provided as property value
+			if ( _valuesEnd[ property ] instanceof Array ) {
+
+				if ( _valuesEnd[ property ].length === 0 ) {
+
+					continue;
+
+				}
+
+				// create a local copy of the Array with the start value at the front
+				_valuesEnd[ property ] = [ _object[ property ] ].concat( _valuesEnd[ property ] );
+
+			}
+
+			_valuesStart[ property ] = _object[ property ];
+
+			if( ( _valuesStart[ property ] instanceof Array ) === false ) {
+				_valuesStart[ property ] *= 1.0; // Ensures we're using numbers, not strings
+			}
+
+			_valuesStartRepeat[ property ] = _valuesStart[ property ] || 0;
+
+		}
+
+		return this;
+
+	};
+
+	this.stop = function () {
+
+		TWEEN.remove( this );
+		return this;
+
+	};
+
+	this.delay = function ( amount ) {
+
+		_delayTime = amount;
+		return this;
+
+	};
+
+	this.repeat = function ( times ) {
+
+		_repeat = times;
+		return this;
+
+	};
+
+	this.easing = function ( easing ) {
+
+		_easingFunction = easing;
+		return this;
+
+	};
+
+	this.interpolation = function ( interpolation ) {
+
+		_interpolationFunction = interpolation;
+		return this;
+
+	};
+
+	this.chain = function () {
+
+		_chainedTweens = arguments;
+		return this;
+
+	};
+
+	this.onStart = function ( callback ) {
+
+		_onStartCallback = callback;
+		return this;
+
+	};
+
+	this.onUpdate = function ( callback ) {
+
+		_onUpdateCallback = callback;
+		return this;
+
+	};
+
+	this.onComplete = function ( callback ) {
+
+		_onCompleteCallback = callback;
+		return this;
+
+	};
+
+	this.update = function ( time ) {
+
+		if ( time < _startTime ) {
+
+			return true;
+
+		}
+
+		if ( _onStartCallbackFired === false ) {
+
+			if ( _onStartCallback !== null ) {
+
+				_onStartCallback.call( _object );
+
+			}
+
+			_onStartCallbackFired = true;
+
+		}
+
+		var elapsed = ( time - _startTime ) / _duration;
+		elapsed = elapsed > 1 ? 1 : elapsed;
+
+		var value = _easingFunction( elapsed );
+
+		for ( var property in _valuesEnd ) {
+
+			var start = _valuesStart[ property ] || 0;
+			var end = _valuesEnd[ property ];
+
+			if ( end instanceof Array ) {
+
+				_object[ property ] = _interpolationFunction( end, value );
+
+			} else {
+
+				if ( typeof(end) === "string" ) {
+					end = start + parseFloat(end, 10);
+				}
+
+				_object[ property ] = start + ( end - start ) * value;
+
+			}
+
+		}
+
+		if ( _onUpdateCallback !== null ) {
+
+			_onUpdateCallback.call( _object, value );
+
+		}
+
+		if ( elapsed == 1 ) {
+
+			if ( _repeat > 0 ) {
+
+				if( isFinite( _repeat ) ) {
+					_repeat--;
+				}
+
+				// reassign starting values, restart by making startTime = now
+				for( var property in _valuesStartRepeat ) {
+
+					if ( typeof( _valuesEnd[ property ] ) === "string" ) {
+						_valuesStartRepeat[ property ] = _valuesStartRepeat[ property ] + parseFloat(_valuesEnd[ property ], 10);
+					}
+
+					_valuesStart[ property ] = _valuesStartRepeat[ property ];
+
+				}
+
+				_startTime = time + _delayTime;
+
+				return true;
+
+			} else {
+
+				if ( _onCompleteCallback !== null ) {
+
+					_onCompleteCallback.call( _object );
+
+				}
+
+				for ( var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i ++ ) {
+
+					_chainedTweens[ i ].start( time );
+
+				}
+
+				return false;
+
+			}
+
+		}
+
+		return true;
+
+	};
+
+};
+
+TWEEN.Easing = {
+
+	Linear: {
+
+		None: function ( k ) {
+
+			return k;
+
+		}
+
+	},
+
+	Quadratic: {
+
+		In: function ( k ) {
+
+			return k * k;
+
+		},
+
+		Out: function ( k ) {
+
+			return k * ( 2 - k );
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( ( k *= 2 ) < 1 ) return 0.5 * k * k;
+			return - 0.5 * ( --k * ( k - 2 ) - 1 );
+
+		}
+
+	},
+
+	Cubic: {
+
+		In: function ( k ) {
+
+			return k * k * k;
+
+		},
+
+		Out: function ( k ) {
+
+			return --k * k * k + 1;
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( ( k *= 2 ) < 1 ) return 0.5 * k * k * k;
+			return 0.5 * ( ( k -= 2 ) * k * k + 2 );
+
+		}
+
+	},
+
+	Quartic: {
+
+		In: function ( k ) {
+
+			return k * k * k * k;
+
+		},
+
+		Out: function ( k ) {
+
+			return 1 - ( --k * k * k * k );
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( ( k *= 2 ) < 1) return 0.5 * k * k * k * k;
+			return - 0.5 * ( ( k -= 2 ) * k * k * k - 2 );
+
+		}
+
+	},
+
+	Quintic: {
+
+		In: function ( k ) {
+
+			return k * k * k * k * k;
+
+		},
+
+		Out: function ( k ) {
+
+			return --k * k * k * k * k + 1;
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( ( k *= 2 ) < 1 ) return 0.5 * k * k * k * k * k;
+			return 0.5 * ( ( k -= 2 ) * k * k * k * k + 2 );
+
+		}
+
+	},
+
+	Sinusoidal: {
+
+		In: function ( k ) {
+
+			return 1 - Math.cos( k * Math.PI / 2 );
+
+		},
+
+		Out: function ( k ) {
+
+			return Math.sin( k * Math.PI / 2 );
+
+		},
+
+		InOut: function ( k ) {
+
+			return 0.5 * ( 1 - Math.cos( Math.PI * k ) );
+
+		}
+
+	},
+
+	Exponential: {
+
+		In: function ( k ) {
+
+			return k === 0 ? 0 : Math.pow( 1024, k - 1 );
+
+		},
+
+		Out: function ( k ) {
+
+			return k === 1 ? 1 : 1 - Math.pow( 2, - 10 * k );
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( k === 0 ) return 0;
+			if ( k === 1 ) return 1;
+			if ( ( k *= 2 ) < 1 ) return 0.5 * Math.pow( 1024, k - 1 );
+			return 0.5 * ( - Math.pow( 2, - 10 * ( k - 1 ) ) + 2 );
+
+		}
+
+	},
+
+	Circular: {
+
+		In: function ( k ) {
+
+			return 1 - Math.sqrt( 1 - k * k );
+
+		},
+
+		Out: function ( k ) {
+
+			return Math.sqrt( 1 - ( --k * k ) );
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( ( k *= 2 ) < 1) return - 0.5 * ( Math.sqrt( 1 - k * k) - 1);
+			return 0.5 * ( Math.sqrt( 1 - ( k -= 2) * k) + 1);
+
+		}
+
+	},
+
+	Elastic: {
+
+		In: function ( k ) {
+
+			var s, a = 0.1, p = 0.4;
+			if ( k === 0 ) return 0;
+			if ( k === 1 ) return 1;
+			if ( !a || a < 1 ) { a = 1; s = p / 4; }
+			else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+			return - ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
+
+		},
+
+		Out: function ( k ) {
+
+			var s, a = 0.1, p = 0.4;
+			if ( k === 0 ) return 0;
+			if ( k === 1 ) return 1;
+			if ( !a || a < 1 ) { a = 1; s = p / 4; }
+			else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+			return ( a * Math.pow( 2, - 10 * k) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) + 1 );
+
+		},
+
+		InOut: function ( k ) {
+
+			var s, a = 0.1, p = 0.4;
+			if ( k === 0 ) return 0;
+			if ( k === 1 ) return 1;
+			if ( !a || a < 1 ) { a = 1; s = p / 4; }
+			else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+			if ( ( k *= 2 ) < 1 ) return - 0.5 * ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
+			return a * Math.pow( 2, -10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) * 0.5 + 1;
+
+		}
+
+	},
+
+	Back: {
+
+		In: function ( k ) {
+
+			var s = 1.70158;
+			return k * k * ( ( s + 1 ) * k - s );
+
+		},
+
+		Out: function ( k ) {
+
+			var s = 1.70158;
+			return --k * k * ( ( s + 1 ) * k + s ) + 1;
+
+		},
+
+		InOut: function ( k ) {
+
+			var s = 1.70158 * 1.525;
+			if ( ( k *= 2 ) < 1 ) return 0.5 * ( k * k * ( ( s + 1 ) * k - s ) );
+			return 0.5 * ( ( k -= 2 ) * k * ( ( s + 1 ) * k + s ) + 2 );
+
+		}
+
+	},
+
+	Bounce: {
+
+		In: function ( k ) {
+
+			return 1 - TWEEN.Easing.Bounce.Out( 1 - k );
+
+		},
+
+		Out: function ( k ) {
+
+			if ( k < ( 1 / 2.75 ) ) {
+
+				return 7.5625 * k * k;
+
+			} else if ( k < ( 2 / 2.75 ) ) {
+
+				return 7.5625 * ( k -= ( 1.5 / 2.75 ) ) * k + 0.75;
+
+			} else if ( k < ( 2.5 / 2.75 ) ) {
+
+				return 7.5625 * ( k -= ( 2.25 / 2.75 ) ) * k + 0.9375;
+
+			} else {
+
+				return 7.5625 * ( k -= ( 2.625 / 2.75 ) ) * k + 0.984375;
+
+			}
+
+		},
+
+		InOut: function ( k ) {
+
+			if ( k < 0.5 ) return TWEEN.Easing.Bounce.In( k * 2 ) * 0.5;
+			return TWEEN.Easing.Bounce.Out( k * 2 - 1 ) * 0.5 + 0.5;
+
+		}
+
+	}
+
+};
+
+TWEEN.Interpolation = {
+
+	Linear: function ( v, k ) {
+
+		var m = v.length - 1, f = m * k, i = Math.floor( f ), fn = TWEEN.Interpolation.Utils.Linear;
+
+		if ( k < 0 ) return fn( v[ 0 ], v[ 1 ], f );
+		if ( k > 1 ) return fn( v[ m ], v[ m - 1 ], m - f );
+
+		return fn( v[ i ], v[ i + 1 > m ? m : i + 1 ], f - i );
+
+	},
+
+	Bezier: function ( v, k ) {
+
+		var b = 0, n = v.length - 1, pw = Math.pow, bn = TWEEN.Interpolation.Utils.Bernstein, i;
+
+		for ( i = 0; i <= n; i++ ) {
+			b += pw( 1 - k, n - i ) * pw( k, i ) * v[ i ] * bn( n, i );
+		}
+
+		return b;
+
+	},
+
+	CatmullRom: function ( v, k ) {
+
+		var m = v.length - 1, f = m * k, i = Math.floor( f ), fn = TWEEN.Interpolation.Utils.CatmullRom;
+
+		if ( v[ 0 ] === v[ m ] ) {
+
+			if ( k < 0 ) i = Math.floor( f = m * ( 1 + k ) );
+
+			return fn( v[ ( i - 1 + m ) % m ], v[ i ], v[ ( i + 1 ) % m ], v[ ( i + 2 ) % m ], f - i );
+
+		} else {
+
+			if ( k < 0 ) return v[ 0 ] - ( fn( v[ 0 ], v[ 0 ], v[ 1 ], v[ 1 ], -f ) - v[ 0 ] );
+			if ( k > 1 ) return v[ m ] - ( fn( v[ m ], v[ m ], v[ m - 1 ], v[ m - 1 ], f - m ) - v[ m ] );
+
+			return fn( v[ i ? i - 1 : 0 ], v[ i ], v[ m < i + 1 ? m : i + 1 ], v[ m < i + 2 ? m : i + 2 ], f - i );
+
+		}
+
+	},
+
+	Utils: {
+
+		Linear: function ( p0, p1, t ) {
+
+			return ( p1 - p0 ) * t + p0;
+
+		},
+
+		Bernstein: function ( n , i ) {
+
+			var fc = TWEEN.Interpolation.Utils.Factorial;
+			return fc( n ) / fc( i ) / fc( n - i );
+
+		},
+
+		Factorial: ( function () {
+
+			var a = [ 1 ];
+
+			return function ( n ) {
+
+				var s = 1, i;
+				if ( a[ n ] ) return a[ n ];
+				for ( i = n; i > 1; i-- ) s *= i;
+				return a[ n ] = s;
+
+			};
+
+		} )(),
+
+		CatmullRom: function ( p0, p1, p2, p3, t ) {
+
+			var v0 = ( p2 - p0 ) * 0.5, v1 = ( p3 - p1 ) * 0.5, t2 = t * t, t3 = t * t2;
+			return ( 2 * p1 - 2 * p2 + v0 + v1 ) * t3 + ( - 3 * p1 + 3 * p2 - 2 * v0 - v1 ) * t2 + v0 * t + p1;
+
+		}
+
+	}
+
+};
+
 
 /* Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
@@ -175,6 +892,7 @@ IRIS.EV_ASSET_UNREGISTERED = 'unregistered';
 IRIS.EV_ASSET_CREATED = 'created';
 IRIS.EV_ASSET_UPDATED = 'updated';
 IRIS.EV_ASSET_DELETED = 'deleted';
+IRIS.EV_ASSET_RENDER = 'render';
 
 IRIS.Asset = function(opts){
     // Required
@@ -194,6 +912,9 @@ IRIS.Asset = function(opts){
     this.createModifier = IRIS._setterUndef(opts.createModifier, false);
     this.updateModifier = IRIS._setterUndef(opts.updateModifier, false);
     this.deleteModifier = IRIS._setterUndef(opts.deleteModifier, false);
+    this.stateModifier  = IRIS._setterUndef(opts.stateModifier, false);
+
+    this._renderModifier = [];
 };
 
 IRIS.Asset.prototype = {
@@ -202,6 +923,14 @@ IRIS.Asset.prototype = {
     pushState: function(state) {
     },
     pullState: function(state) {
+    },
+    addModifier: function(type, modifier) {
+        if (type == IRIS.EV_ASSET_RENDER) {
+            this._renderModifier.push(modifier);
+            this.engine.registerRendereable(this);
+        }
+    },
+    removeModifier: function(type) {
     }
 };
 
@@ -231,7 +960,11 @@ IRIS.assetProvider = Class.extend({
                         createModifier: assetOpts.create,
                         updateModifier: assetOpts.update,
                         deletemodifier: assetOpts.delete,
+                        stateModifier: assetOpts.state,
                         data: data});
+        if (IRIS._isUndef(this._assetIns[oEntity.id]))
+            this._assetIns[oEntity.id] = {};
+        this._assetIns[oEntity.id][index] = oAsset;
         return oAsset;
     },
     getAssetId: function(index, data, oEntity) {
@@ -313,8 +1046,7 @@ IRIS.createDatasource= function(pDS, pOpts) {
 };
 
 IRIS.DS_MODE_AJAX = 1;
-IRIS.DS_MODE_FILE = 2;
-IRIS.DS_MODE_OBJECT = 3;
+IRIS.DS_MODE_OBJECT = 2;
 
 IRIS._defaultDatasource = {
     mode: IRIS.DS_MODE_AJAX,
@@ -332,13 +1064,15 @@ IRIS._defaultDatasource = {
 
 IRIS._createDatasource = function(pOpts) {
     pOpts = $.extend(true, {}, IRIS._defaultDatasource, pOpts);
+    if (IRIS._isUndef(pOpts.uri))
+            pOpts.mode = IRIS.DS_MODE_OBJECT;
     var oDS = new IRIS.Datasource(pOpts);
     if (typeof IRIS.ctrl.ds[oDS.id] == 'undefined') {
         IRIS.ctrl.ds[oDS.id] = oDS;
         if (IRIS.ctrl.init) {
             if (oDS.firstCall)
                 oDS.requestData();
-            else if (oDS.auto)
+            else if (oDS.auto && oDS.mode == IRIS.DS_MODE_AJAX)
                 IRIS.ctrl.ds.auto[oDS.id] = setTimeout(
                     'IRIS._requestDatasource("'+oDS.id+'", {})', oDS.rate);
         }
@@ -356,17 +1090,7 @@ IRIS._requestDatasource = function(pId, pData) {
         if (typeof oDS.beforeSend == 'function')
             oDS.beforeSend(oDS);
         oDS._request = true;
-        switch (oDS.mode) {
-            case IRIS.DS_MODE_AJAX:
-                IRIS._requestDatasourceAjax(oDS);
-            break;
-            case IRIS.DS_MODE_FILE:
-                //TODO
-            break;
-            case IRIS.DS_MODE_OBJECT:
-                //TODO
-            break;
-        }
+        IRIS._requestDatasourceAjax(oDS);
     }
     return false;
 };
@@ -404,10 +1128,14 @@ IRIS._requestDatasourceAjaxSuccess = function(data) {
     if (typeof this.success == 'function')
         this.success(data, this);
     //Process entities.
-    if (typeof IRIS.ctrl.dsEntRel[this.id] != 'undefined')
-        for(var key in IRIS.ctrl.dsEntRel[this.id])
+    IRIS._processDatasourceData(data, this);
+};
+
+IRIS._processDatasourceData = function(data, DS) {
+    if (typeof IRIS.ctrl.dsEntRel[DS.id] != 'undefined')
+        for(var key in IRIS.ctrl.dsEntRel[DS.id])
             if (typeof IRIS.ctrl.ent[key] != 'undefined')
-                IRIS.createInstances(data, IRIS.ctrl.ent[key], IRIS.ctrl.dsEntRel[this.id][key]);
+                IRIS.createInstances(data, IRIS.ctrl.ent[key], IRIS.ctrl.dsEntRel[DS.id][key]);
 };
 
 IRIS._requestDatasourceAjaxError = function() {
@@ -447,6 +1175,9 @@ IRIS.Datasource.prototype = {
     requestData: function(data) {
         IRIS._requestDatasource(this.id, data);
     },
+    processData: function(data) {
+        IRIS._processDatasourceData(data, this);
+    },
     get: function(param) {
         return this[param];
     },
@@ -459,6 +1190,7 @@ IRIS.Datasource.prototype = {
 };
 
 IRIS.Engine = Class.extend({
+    _renderableAssets: [], //TODO: change to object with index to unregister assets
     init: function(opts) {
         this.isRunning = false;
         //this.scene = opts.scene;
@@ -467,10 +1199,8 @@ IRIS.Engine = Class.extend({
         this.modifierProvider = this._getModifierProviderInstance(this.modifierProvider,
                                 IRIS.ui.modifier); //TODO pass opts as second param.
         /*Functions to be defined by each Engine specific implementation*/
-        //this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
-        //this.createAsset = opts.createAsset; //Must return a valid Asset instance.
-        //this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
         this.scene = this.getScene();
+        this.scene.engine = this;
         this.scene.init();
         IRIS.onEntityCreated(this._createAsset.bind(this));
         IRIS.onEntityUpdated(this._updateAsset.bind(this));
@@ -482,8 +1212,16 @@ IRIS.Engine = Class.extend({
     pause: function() {
         this.isRunning = false;
     },
+    render: function() {
+        for(var key in this._renderableAssets)
+            this._renderAsset(this._renderableAssets[key]);
+    },
+    registerRendereable: function(oAsset) {
+        this._renderableAssets.push(oAsset);
+    },
     _createAsset: function(index, data, oEntity) {
         var oAsset = this.assetProvider.getAsset(index, data, oEntity);
+        oAsset.engine = this;
         this.modifierProvider.apply(oAsset,oAsset.createModifier);
         this.populateAsset(oAsset);
         this.scene._addAsset(oAsset);
@@ -491,6 +1229,11 @@ IRIS.Engine = Class.extend({
     _updateAsset: function(index, oldData, newData, oEntity) {
     },
     _deleteAsset: function(index, oEntity) {
+    },
+    _renderAsset: function(oAsset) {
+        this.modifierProvider.apply(oAsset,oAsset._renderModifier);
+    },
+    _stateAsset: function(index, oAsset) {
     },
     _getAssetProviderInstance: function (id, opts) {
         if (typeof IRIS.ctrl.assetProvider[id] !== 'undefined')
@@ -779,11 +1522,186 @@ IRIS.MODIFIER_TARGET_SIZE = 'size';
 IRIS.MODIFIER_TARGET_ROTATION = 'rotation';
 
 IRIS.Modifier = Class.extend({
+    _defaultLapse: 500,
+    _defaultEasing: 'linear',
+    _fromZone: false,
+    _toZone: false,
     init: function(opts) {
         this.id = opts.id;
         this.target = opts.target;
-        this.zone = IRIS.getZone(opts.zone, opts.zoneOpts);
-        //this.tween = this.getTween(opts.tween, opts.tweenOpts);
+        this.setFrom(opts.from);
+        this.setTo(opts.to);
+        if (!IRIS._isUndef(opts.zone) && !this._fromZone)
+            this._upgradeFrom(opts);
+        this.setTween(opts);
+    },
+    setFrom: function(from) { //TODO: rename function to 'from' and enable chainability.
+        if (IRIS._isObject(from)) {
+            if (!IRIS._isUndef(from.zone) && IRIS.isZone(from.zone)) {
+                this._fromZone = true;
+                from = IRIS.getZone(from.zone, from);
+            } else
+                from = this._normalize(from);
+        } else if (IRIS._isNumber(from)) {
+            from =  this._normalize(from);
+        } else if (IRIS._isString(from)) {
+            from = false; //TODO: specify special behaviors, such as take the asset current value as start point
+        } else
+            from = false;
+        this.from = from;
+    },
+    setTo: function(to) {
+        if (IRIS._isObject(to)) {
+            if (!IRIS._isUndef(to.zone) && IRIS.isZone(to.zone)) {
+                this._toZone = true;
+                to = IRIS.getZone(to.zone, to);
+            } else
+                to = this._normalize(to);
+        } else if (IRIS._isNumber(to)) {
+            to = this._normalize(to);
+        } else if (IRIS._isString(to)) {
+            to = false; //TODO: specify special behaviors, such as take the asset current value as end point
+        } else
+            to = false;
+        this.to = to;
+    },
+    setTween: function(opts) {
+        this.lapse = this._getLapse(opts.lapse);
+        this.easing = this._getEasing(opts.easing);
+    },
+    _apply: function(oAsset) {
+        if(this._fromZone)
+            var fromValue = this.from.getStep();
+        else
+            var fromValue = this.from;
+
+        if (this.to === false)
+            this.apply(oAsset, fromValue);
+        else {
+            if (this._toZone)
+                var toValue = this.to.getStep();
+            else
+                var toValue = this.to;
+            var tweenModifier = new IRIS.TweenModifier({
+                                target: oAsset,
+                                from: fromValue,
+                                to: toValue,
+                                lapse: this.lapse,
+                                easing: this.easing,
+                                applyFn: this.apply
+                                });
+            oAsset.addModifier('render', tweenModifier);
+        }
+    },
+    _normalize: function(opts) {
+        switch (this.target) {
+            case IRIS.MODIFIER_TARGET_POSITION: //TODO how to send default 2d or 3d vector
+            case IRIS.MODIFIER_TARGET_SIZE:
+            case IRIS.MODIFIER_TARGET_ROTATION:
+                return IRIS._normalizeToVector3(opts,{x:0,y:0,z:0});
+            case IRIS.MODIFIER_TARGET_SCALE:
+                return IRIS._normalizeToNumber(opts,1);
+            case IRIS.MODIFIER_TARGET_COLOR:
+                return IRIS._normalizeToColor(opts,{r:1,g:1,b:1,a:1});
+            default:
+                return false;
+        };
+    },
+    _upgradeFrom: function(opts) {
+        if (IRIS.isZone(opts.zone) && this.from) {
+            var from = IRIS.getZone(opts.zone,opts);
+            from.x = this.from.x;
+            from.y = this.from.y;
+            if (!IRIS._isUndef(from.z))
+                from.z = this.from.z;
+            this.from = from;
+            this._fromZone = true;
+        }
+    },
+    _getEasing: function(easing) {
+        if (IRIS._isFn(easing))
+            return easing;
+        switch(easing) {
+            case 'quead':
+            case 'quadIn':
+                return TWEEN.Easing.Quadratic.In;
+            case 'quadOut':
+                return TWEEN.Easing.Quadratic.Out;
+            case 'quadInOut':
+                return TWEEN.Easing.Quadratic.InOut;
+            case 'cubic':
+            case 'cubicIn':
+                return TWEEN.Easing.Cubic.In;
+            case 'cubicOut':
+                return TWEEN.Easing.Cubic.Out;
+            case 'cubicInOut':
+                return TWEEN.Easing.Cubic.InOut;
+            case 'quart':
+            case 'quartIn':
+                return TWEEN.Easing.Quartic.In;
+            case 'quartOut':
+                return TWEEN.Easing.Quartic.Out;
+            case 'quartInOut':
+                return TWEEN.Easing.Quartic.InOut;
+            case 'quint':
+            case 'quintIn':
+                return TWEEN.Easing.Quintic.In;
+            case 'quintOut':
+                return TWEEN.Easing.Quintic.Out;
+            case 'quintInOut':
+                return TWEEN.Easing.Quintic.InOut;
+            case 'sin':
+            case 'sinIn':
+                return TWEEN.Easing.Sinusoidal.In;
+            case 'sinOut':
+                return TWEEN.Easing.Sinusoidal.Out;
+            case 'sinInOut':
+                return TWEEN.Easing.Sinusoidal.InOut;
+            case 'exp':
+            case 'expIn':
+                return TWEEN.Easing.Exponential.In;
+            case 'expOut':
+                return TWEEN.Easing.Exponential.Out;
+            case 'expInOut':
+                return TWEEN.Easing.Exponential.InOut;
+            case 'circ':
+            case 'circIn':
+                return TWEEN.Easing.Circular.In;
+            case 'circOut':
+                return TWEEN.Easing.Circular.Out;
+            case 'circInOut':
+                return TWEEN.Easing.Circular.InOut;
+            case 'elastic':
+            case 'elasticIn':
+                return TWEEN.Easing.Elastic.In;
+            case 'elasticOut':
+                return TWEEN.Easing.Elastic.Out;
+            case 'elasticInOut':
+                return TWEEN.Easing.Elastic.InOut;
+            case 'back':
+            case 'backIn':
+                return TWEEN.Easing.Back.In;
+            case 'backOut':
+                return TWEEN.Easing.Back.Out;
+            case 'backInOut':
+                return TWEEN.Easing.Back.InOut;
+            case 'bounce':
+            case 'bounceIn':
+                return TWEEN.Easing.Bounce.In;
+            case 'bounceOut':
+                return TWEEN.Easing.Bounce.Out;
+            case 'bounceInOut':
+                return TWEEN.Easing.Bounce.InOut;
+            case 'linear':
+            default:
+                return TWEEN.Easing.Linear.None;
+        }
+    },
+    _getLapse: function(lapse) {
+        if (IRIS._isUndef(lapse))
+            return this._defaultLapse;
+        else
+            return parseInt(lapse);  
     }
 });
 
@@ -821,16 +1739,20 @@ IRIS.ModifierProvider = Class.extend({
     },
     apply: function(oAsset, modifierIds) {
         for(var key in modifierIds) {
-            if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
-                //TODO: implement concept of shared and private modifiers
-                //IF shared we create an instance of a modifier bound to this provider
-                var modifierIns = this._modifierIns[modifierIds[key]];
-                if (IRIS._isUndef(modifierIns)) {
-                    modifierIns = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
-                    this._modifierIns[modifierIds[key]] = modifierIns;
+            if (IRIS._isString(modifierIds[key])) {
+                if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
+                    //TODO: implement concept of shared and private modifiers
+                    //IF shared we create an instance of a modifier bound to this provider
+                    var modifierIns = this._modifierIns[modifierIds[key]];
+                    if (IRIS._isUndef(modifierIns)) {
+                        modifierIns = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
+                        this._modifierIns[modifierIds[key]] = modifierIns;
+                    }
+                    if (modifierIns)
+                        modifierIns._apply(oAsset);
                 }
-                if (modifierIns)
-                    modifierIns.apply(oAsset);
+            } else {
+                modifierIds[key].apply(oAsset);
             }
         }
     },
@@ -895,6 +1817,29 @@ IRIS.Scene.prototype = {
         this.removeAsset();
     }
 };
+
+IRIS.TweenModifier = Class.extend({
+    init: function(opts) {
+        this.target  = opts.target;
+        this.from    = opts.from;
+        this.to      = opts.to;
+        this.lapse   = opts.lapse;
+        this.easing  = opts.easing;
+        this.applyFn = opts.applyFn;
+        this.from.__target  = this.target;
+        this.from.__applyFn = this.applyFn;
+        this.tween = new TWEEN.Tween(this.from)
+                         .to(this.to, this.lapse)
+                         .easing(this.easing)
+                         .onUpdate(function(){
+                            this.__applyFn(this.__target, this);
+                         });
+        this.tween.start();
+    },
+    apply: function(oAsset) {
+        TWEEN.update();
+    }
+});
 
 IRIS.ZONE_TYPE_LINE_2D = 'line2D';
 IRIS.ZONE_TYPE_CIRCLE = 'circle';
@@ -985,6 +1930,11 @@ IRIS.getZone = function(id, opts) {
     if (IRIS._isUndef(IRIS.ctrl.zone[id]))
         return false;
     return new IRIS.ctrl.zone[id](opts);
+};
+IRIS.isZone = function(id) {
+    if (IRIS._isUndef(IRIS.ctrl.zone[id]))
+        return false;
+    return true;
 };
 
 
@@ -1245,14 +2195,12 @@ IRIS.ThreejsPositionModifier = IRIS.Modifier.extend({
     init: function(opts) {
         this._super(opts);
     },
-    apply: function(oAsset) {
-        var v = this.zone.getStep();
-        oAsset.position = v;
-        oAsset.object.position.x = v.x;
-        oAsset.object.position.y = v.y;
-        oAsset.object.position.z = v.z;
+    apply: function(oAsset, val) {
+        oAsset.position = val;
+        oAsset.object.position.x = val.x;
+        oAsset.object.position.y = val.y;
+        oAsset.object.position.z = val.z;
     }
-    //apply (should be implemented by the extending class)
 });
 
 IRIS.ui = {};
@@ -1676,29 +2624,48 @@ IRIS.Easing = {
     }
 };
 
-/*
- * Setter.
- * @class Vector3
- */
-IRIS.VectorInitializer = Class.extend({
-    init: function(opts){ }
-});
- 
-IRIS.PositionInitializer = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToVector2 = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Vector2(value, value);
+    else if (IRIS._isObject(value))
+        return new IRIS.Vector2(value.x, value.y);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Vector2(defaultParams.x, defaultParams.y);
+    else
+        return false;
+};
 
-IRIS.ScaleInitializar = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToVector3 = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Vector3(value, value, value);
+    else if (IRIS._isObject(value))
+        return new IRIS.Vector3(value.x, value.y, value.z);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Vector3(defaultParams.x, defaultParams.y, defaultParams.z);
+    else
+        return false;
+};
 
-IRIS.RotationInitializar = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToNumber = function(value, defaultValue) {
+    if (IRIS._isUndef(value) && !IRIS._isUndef(defaultValue))
+        return defaultValue;
+    if (IRIS._isNumber(value))
+        return value;
+    else
+        return parseFloat(value);
+};
 
-IRIS.VelocityInitializer = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToColor = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Color(value, value, value, 1);
+    else if (IRIS._isObject(value))
+        return new IRIS.Color(value.r, value.g, value.b, value.a);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Color(defaultParams.r, defaultParams.g, defaultParams.b, defaultParams.a);
+    else
+        return false;
+};
+
 
 /*var oConsoleEngine = new IRIS.Engine({
         id : 'console',
@@ -1727,7 +2694,6 @@ IRIS.registerEngine(oConsoleEngine);*/
 
 IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
-        assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
         modifierProvider: 'threejs',
         modifierProviderOpts: {},
         type: IRIS.Engine.TYPE_3D,
@@ -1797,6 +2763,7 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
                     this.obj.controls.update(this.obj.clock.getDelta());
                     this.obj.renderer.render(this.object, this.obj.camera);
                     requestAnimationFrame(this.onFrame.bind(this));
+                    this.engine.render();
                 }
             });
         },
