@@ -50,6 +50,10 @@ IRIS._isString = function(a) {
     return (typeof a == 'string');
 };
 
+IRIS._isFn = function(a) {
+    return (typeof a == 'function');
+};
+
 IRIS._valueToArray = function(a) {
     if (a instanceof Array)
         return a;
@@ -105,4 +109,18 @@ IRIS._setterVector3 = function(values, def) {
         return new IRIS.Vector3(values.x, values.y, values.z);
     else
         return def;
+};
+
+IRIS._parseNamespace = function(value) {
+    var elems = {namespace:'',entity:''};
+    if (IRIS._isString(value)) {
+        var pos = value.lastIndexOf('.');
+        if (pos == -1)
+            elems.entity = value;
+        else {
+            elems.entity = value.substring(pos+1);
+            elems.namespace = value.substring(0,pos);
+        }
+    }
+    return elems;
 };
