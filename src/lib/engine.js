@@ -1,4 +1,5 @@
 IRIS.Engine = Class.extend({
+    _renderableAssets: [], //TODO: change to object with index to unregister assets
     init: function(opts) {
         this.isRunning = false;
         //this.scene = opts.scene;
@@ -7,10 +8,8 @@ IRIS.Engine = Class.extend({
         this.modifierProvider = this._getModifierProviderInstance(this.modifierProvider,
                                 IRIS.ui.modifier); //TODO pass opts as second param.
         /*Functions to be defined by each Engine specific implementation*/
-        //this.getScene = opts.getScene; //Returns an instance of a scene the engine will work with.
-        //this.createAsset = opts.createAsset; //Must return a valid Asset instance.
-        //this.populateAsset = opts.populateAsset; //Must return true, false or an Asset.
         this.scene = this.getScene();
+        this.scene.engine = this;
         this.scene.init();
         IRIS.onEntityCreated(this._createAsset.bind(this));
         IRIS.onEntityUpdated(this._updateAsset.bind(this));
@@ -22,8 +21,16 @@ IRIS.Engine = Class.extend({
     pause: function() {
         this.isRunning = false;
     },
+    render: function() {
+        for(var key in this._renderableAssets)
+            this._renderAsset(this._renderableAssets[key]);
+    },
+    registerRendereable: function(oAsset) {
+        this._renderableAssets.push(oAsset);
+    },
     _createAsset: function(index, data, oEntity) {
         var oAsset = this.assetProvider.getAsset(index, data, oEntity);
+        oAsset.engine = this;
         this.modifierProvider.apply(oAsset,oAsset.createModifier);
         this.populateAsset(oAsset);
         this.scene._addAsset(oAsset);
@@ -31,6 +38,11 @@ IRIS.Engine = Class.extend({
     _updateAsset: function(index, oldData, newData, oEntity) {
     },
     _deleteAsset: function(index, oEntity) {
+    },
+    _renderAsset: function(oAsset) {
+        this.modifierProvider.apply(oAsset,oAsset._renderModifier);
+    },
+    _stateAsset: function(index, oAsset) {
     },
     _getAssetProviderInstance: function (id, opts) {
         if (typeof IRIS.ctrl.assetProvider[id] !== 'undefined')
