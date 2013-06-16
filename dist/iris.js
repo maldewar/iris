@@ -1018,8 +1018,7 @@ IRIS.ctrl.ds.auto = {}; //Register of datasources waiting to request
 IRIS.createDatasource= function(pDS, pOpts) {
     var id  = false;
     if (typeof pDS == 'string' &&
-        typeof pOpts == 'object' &&
-        typeof pOpts.uri == 'string') {
+        typeof pOpts == 'object') {
         id = pDS;
     } else if (typeof pDS == 'object' &&
                typeof pDS.id == 'string') {
@@ -1030,15 +1029,14 @@ IRIS.createDatasource= function(pDS, pOpts) {
         var arrDS = [];
         for(var i=0; i<pDS.length; i++) {
             if (!(pDS[i] instanceof Array) &&
-                typeof pDS[i].id == 'string' && 
-                typeof pDS[i].uri == 'string') {
+                typeof pDS[i].id == 'string') {
                 arrDS.push(IRIS.createDatasource(pDS[i]));
             } else {
                 arrDS.push(false);
             }
         }
         return arrDS;
-    } else if (id !== false && typeof pOpts.uri == 'string') {
+    } else if (id !== false) {
         pOpts.id = id;
         return IRIS._createDatasource(pOpts);
     }
@@ -1573,7 +1571,7 @@ IRIS.Modifier = Class.extend({
         if(this._fromZone)
             var fromValue = this.from.getStep();
         else
-            var fromValue = this.from;
+            var fromValue = this.from.clone();
 
         if (this.to === false)
             this.apply(oAsset, fromValue);
@@ -1581,7 +1579,7 @@ IRIS.Modifier = Class.extend({
             if (this._toZone)
                 var toValue = this.to.getStep();
             else
-                var toValue = this.to;
+                var toValue = this.to.clone(); //TODO: provide cloning for single value vars ?
             var tweenModifier = new IRIS.TweenModifier({
                                 target: oAsset,
                                 from: fromValue,
@@ -1718,25 +1716,6 @@ IRIS.ModifierProvider = Class.extend({
             }
         }
     },
-    getModifier: function(id) {
-        if (typeof this._modifierIns[id] !== 'undefined')
-            return this._modifierIns[id];
-        var opts = this.getModifierOpts(id);
-        if (opts) {
-            switch (opts.target) {
-                default:
-                    var oModifier = this._getModifier('id', opts);
-            }
-            /*var oModifier = new IRIS.Modifier({
-                            id: id,
-                            target: opts.target,
-                            zone: opts.zone,
-                            zoneOpts: opts.zoneOpts});*/
-            this._modifierIns[id] = oModifier;
-            return oModifier;
-        }
-        return false;
-    },
     apply: function(oAsset, modifierIds) {
         for(var key in modifierIds) {
             if (IRIS._isString(modifierIds[key])) {
@@ -1762,12 +1741,7 @@ IRIS.ModifierProvider = Class.extend({
         return false;
     },
     _getModifierInstance: function(opts) {
-        switch(opts.target) {
-            case IRIS.MODIFIER_TARGET_POSITION:
-                return new IRIS.ThreejsPositionModifier(opts);
-            default:
-                return false;
-        }
+        return this.getModifier(opts);
     },
     _normalizeOpts: function(modifierId, opts) {
         if (typeof opts == 'object') {
@@ -2172,24 +2146,20 @@ IRIS.ThreejsModifierProvider = IRIS.ModifierProvider.extend({
     init: function(opts) {
         this._super(opts);
     },
-    _getModifier: function(id, opt) {
-        var oModifier = new IRIS.Modifier({
-                            id: id,
-                            target: opts.target,
-                            zone: opts.zone,
-                            zoneOpts: opts.zoneOpts});
-        return oModifier;
+    getModifier: function(opts) {
+        switch(opts.target) {
+            case IRIS.MODIFIER_TARGET_POSITION:
+                return new IRIS.ThreejsPositionModifier(opts);
+            case IRIS.MODIFIER_TARGET_COLOR:
+                return new IRIS.ThreejsColorModifier(opts);
+            default:
+                return false;
+        }
     }
 
 });
 
 IRIS.registerModifierProvider(IRIS.ThreejsModifierProvider, 'threejs');
-
-IRIS.MODIFIER_TARGET_POSITION = 'position';
-IRIS.MODIFIER_TARGET_SCALE = 'scale';
-IRIS.MODIFIER_TARGET_COLOR = 'color';
-IRIS.MODIFIER_TARGET_SIZE = 'size';
-IRIS.MODIFIER_TARGET_ROTATION = 'rotation';
 
 IRIS.ThreejsPositionModifier = IRIS.Modifier.extend({
     init: function(opts) {
@@ -2200,6 +2170,19 @@ IRIS.ThreejsPositionModifier = IRIS.Modifier.extend({
         oAsset.object.position.x = val.x;
         oAsset.object.position.y = val.y;
         oAsset.object.position.z = val.z;
+    }
+});
+
+IRIS.ThreejsColorModifier = IRIS.Modifier.extend({
+    init: function(opts) {
+        this._super(opts);
+    },
+    apply: function(oAsset, val) {
+        oAsset.color = val;
+        oAsset.object.material.color.r = val.r;
+        oAsset.object.material.color.g = val.g;
+        oAsset.object.material.color.b = val.b;
+        oAsset.object.material.opacity = val.a;
     }
 });
 
@@ -2449,6 +2432,9 @@ IRIS.Color = function(r, g, b, a) {
 };
 
 IRIS.Color.prototype = {
+    clone: function() {
+        return new IRIS.Color(this.r, this.g, this.b, this.a);
+    }
 };
 
 /*
@@ -2739,7 +2725,7 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
 
                     document.body.appendChild(this.obj.renderer.domElement); // TODO: option to select scene area.
                     this.obj.clock = new THREE.Clock();
-                    this.obj.controls = new THREE.TrackballControls( this.obj.camera );
+                    this.obj.controls = new THREE.TrackballControls( this.obj.camera, this.obj.renderer.domElement );
                     this.obj.controls.rotateSpeed = 2.0;//1.0
                     this.obj.controls.zoomSpeed = 2.2;//1.2
                     this.obj.controls.panSpeed = 1.6;//0.8
@@ -2760,9 +2746,9 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
                     this.object.add(oAsset.object);
                 },
                 onFrame: function() {
+                    requestAnimationFrame(this.onFrame.bind(this));
                     this.obj.controls.update(this.obj.clock.getDelta());
                     this.obj.renderer.render(this.object, this.obj.camera);
-                    requestAnimationFrame(this.onFrame.bind(this));
                     this.engine.render();
                 }
             });
