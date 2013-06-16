@@ -88,6 +88,11 @@ IRIS.getZone = function(id, opts) {
         return false;
     return new IRIS.ctrl.zone[id](opts);
 };
+IRIS.isZone = function(id) {
+    if (IRIS._isUndef(IRIS.ctrl.zone[id]))
+        return false;
+    return true;
+};
 
 
 IRIS.VertexZone = IRIS.Vector2Zone.extend({
