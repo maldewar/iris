@@ -24,7 +24,11 @@ IRIS.assetProvider = Class.extend({
                         createModifier: assetOpts.create,
                         updateModifier: assetOpts.update,
                         deletemodifier: assetOpts.delete,
+                        stateModifier: assetOpts.state,
                         data: data});
+        if (IRIS._isUndef(this._assetIns[oEntity.id]))
+            this._assetIns[oEntity.id] = {};
+        this._assetIns[oEntity.id][index] = oAsset;
         return oAsset;
     },
     getAssetId: function(index, data, oEntity) {
