@@ -419,26 +419,45 @@ IRIS.Easing = {
     }
 };
 
-/*
- * Setter.
- * @class Vector3
- */
-IRIS.VectorInitializer = Class.extend({
-    init: function(opts){ }
-});
- 
-IRIS.PositionInitializer = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToVector2 = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Vector2(value, value);
+    else if (IRIS._isObject(value))
+        return new IRIS.Vector2(value.x, value.y);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Vector2(defaultParams.x, defaultParams.y);
+    else
+        return false;
+};
 
-IRIS.ScaleInitializar = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToVector3 = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Vector3(value, value, value);
+    else if (IRIS._isObject(value))
+        return new IRIS.Vector3(value.x, value.y, value.z);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Vector3(defaultParams.x, defaultParams.y, defaultParams.z);
+    else
+        return false;
+};
 
-IRIS.RotationInitializar = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToNumber = function(value, defaultValue) {
+    if (IRIS._isUndef(value) && !IRIS._isUndef(defaultValue))
+        return defaultValue;
+    if (IRIS._isNumber(value))
+        return value;
+    else
+        return parseFloat(value);
+};
 
-IRIS.VelocityInitializer = IRIS.VectorInitializer.extend({
-    init: function(){ }
-});
+IRIS._normalizeToColor = function(value, defaultParams) {
+    if (IRIS._isNumber(value))
+        return new IRIS.Color(value, value, value, 1);
+    else if (IRIS._isObject(value))
+        return new IRIS.Color(value.r, value.g, value.b, value.a);
+    else if (!IRIS._isUndef(defaultParams))
+        return new IRIS.Color(defaultParams.r, defaultParams.g, defaultParams.b, defaultParams.a);
+    else
+        return false;
+};
+
