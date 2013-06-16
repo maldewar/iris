@@ -32,16 +32,20 @@ IRIS.ModifierProvider = Class.extend({
     },
     apply: function(oAsset, modifierIds) {
         for(var key in modifierIds) {
-            if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
-                //TODO: implement concept of shared and private modifiers
-                //IF shared we create an instance of a modifier bound to this provider
-                var modifierIns = this._modifierIns[modifierIds[key]];
-                if (IRIS._isUndef(modifierIns)) {
-                    modifierIns = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
-                    this._modifierIns[modifierIds[key]] = modifierIns;
+            if (IRIS._isString(modifierIds[key])) {
+                if (!IRIS._isUndef(this._modifierOpts[modifierIds[key]])) {
+                    //TODO: implement concept of shared and private modifiers
+                    //IF shared we create an instance of a modifier bound to this provider
+                    var modifierIns = this._modifierIns[modifierIds[key]];
+                    if (IRIS._isUndef(modifierIns)) {
+                        modifierIns = this._getModifierInstance(this._modifierOpts[modifierIds[key]]);
+                        this._modifierIns[modifierIds[key]] = modifierIns;
+                    }
+                    if (modifierIns)
+                        modifierIns._apply(oAsset);
                 }
-                if (modifierIns)
-                    modifierIns.apply(oAsset);
+            } else {
+                modifierIds[key].apply(oAsset);
             }
         }
     },
