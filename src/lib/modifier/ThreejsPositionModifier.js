@@ -8,12 +8,10 @@ IRIS.ThreejsPositionModifier = IRIS.Modifier.extend({
     init: function(opts) {
         this._super(opts);
     },
-    apply: function(oAsset) {
-        var v = this.zone.getStep();
-        oAsset.position = v;
-        oAsset.object.position.x = v.x;
-        oAsset.object.position.y = v.y;
-        oAsset.object.position.z = v.z;
+    apply: function(oAsset, val) {
+        oAsset.position = val;
+        oAsset.object.position.x = val.x;
+        oAsset.object.position.y = val.y;
+        oAsset.object.position.z = val.z;
     }
-    //apply (should be implemented by the extending class)
 });
