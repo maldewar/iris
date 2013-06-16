@@ -31,8 +31,7 @@ IRIS.createDatasource= function(pDS, pOpts) {
 };
 
 IRIS.DS_MODE_AJAX = 1;
-IRIS.DS_MODE_FILE = 2;
-IRIS.DS_MODE_OBJECT = 3;
+IRIS.DS_MODE_OBJECT = 2;
 
 IRIS._defaultDatasource = {
     mode: IRIS.DS_MODE_AJAX,
@@ -50,13 +49,15 @@ IRIS._defaultDatasource = {
 
 IRIS._createDatasource = function(pOpts) {
     pOpts = $.extend(true, {}, IRIS._defaultDatasource, pOpts);
+    if (IRIS._isUndef(pOpts.uri))
+            pOpts.mode = IRIS.DS_MODE_OBJECT;
     var oDS = new IRIS.Datasource(pOpts);
     if (typeof IRIS.ctrl.ds[oDS.id] == 'undefined') {
         IRIS.ctrl.ds[oDS.id] = oDS;
         if (IRIS.ctrl.init) {
             if (oDS.firstCall)
                 oDS.requestData();
-            else if (oDS.auto)
+            else if (oDS.auto && oDS.mode == IRIS.DS_MODE_AJAX)
                 IRIS.ctrl.ds.auto[oDS.id] = setTimeout(
                     'IRIS._requestDatasource("'+oDS.id+'", {})', oDS.rate);
         }
@@ -74,17 +75,7 @@ IRIS._requestDatasource = function(pId, pData) {
         if (typeof oDS.beforeSend == 'function')
             oDS.beforeSend(oDS);
         oDS._request = true;
-        switch (oDS.mode) {
-            case IRIS.DS_MODE_AJAX:
-                IRIS._requestDatasourceAjax(oDS);
-            break;
-            case IRIS.DS_MODE_FILE:
-                //TODO
-            break;
-            case IRIS.DS_MODE_OBJECT:
-                //TODO
-            break;
-        }
+        IRIS._requestDatasourceAjax(oDS);
     }
     return false;
 };
@@ -122,10 +113,14 @@ IRIS._requestDatasourceAjaxSuccess = function(data) {
     if (typeof this.success == 'function')
         this.success(data, this);
     //Process entities.
-    if (typeof IRIS.ctrl.dsEntRel[this.id] != 'undefined')
-        for(var key in IRIS.ctrl.dsEntRel[this.id])
+    IRIS._processDatasourceData(data, this);
+};
+
+IRIS._processDatasourceData = function(data, DS) {
+    if (typeof IRIS.ctrl.dsEntRel[DS.id] != 'undefined')
+        for(var key in IRIS.ctrl.dsEntRel[DS.id])
             if (typeof IRIS.ctrl.ent[key] != 'undefined')
-                IRIS.createInstances(data, IRIS.ctrl.ent[key], IRIS.ctrl.dsEntRel[this.id][key]);
+                IRIS.createInstances(data, IRIS.ctrl.ent[key], IRIS.ctrl.dsEntRel[DS.id][key]);
 };
 
 IRIS._requestDatasourceAjaxError = function() {
@@ -164,6 +159,9 @@ IRIS.Datasource.prototype = {
     _readOnlyFields : ['id','uri','mode'],
     requestData: function(data) {
         IRIS._requestDatasource(this.id, data);
+    },
+    processData: function(data) {
+        IRIS._processDatasourceData(data, this);
     },
     get: function(param) {
         return this[param];
