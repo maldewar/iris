@@ -9,6 +9,7 @@ IRIS.EV_ASSET_UNREGISTERED = 'unregistered';
 IRIS.EV_ASSET_CREATED = 'created';
 IRIS.EV_ASSET_UPDATED = 'updated';
 IRIS.EV_ASSET_DELETED = 'deleted';
+IRIS.EV_ASSET_RENDER = 'render';
 
 IRIS.Asset = function(opts){
     // Required
@@ -28,6 +29,9 @@ IRIS.Asset = function(opts){
     this.createModifier = IRIS._setterUndef(opts.createModifier, false);
     this.updateModifier = IRIS._setterUndef(opts.updateModifier, false);
     this.deleteModifier = IRIS._setterUndef(opts.deleteModifier, false);
+    this.stateModifier  = IRIS._setterUndef(opts.stateModifier, false);
+
+    this._renderModifier = [];
 };
 
 IRIS.Asset.prototype = {
@@ -36,5 +40,13 @@ IRIS.Asset.prototype = {
     pushState: function(state) {
     },
     pullState: function(state) {
+    },
+    addModifier: function(type, modifier) {
+        if (type == IRIS.EV_ASSET_RENDER) {
+            this._renderModifier.push(modifier);
+            this.engine.registerRendereable(this);
+        }
+    },
+    removeModifier: function(type) {
     }
 };
