@@ -1,6 +1,5 @@
 IRIS.PlanetariumEngine = IRIS.Engine.extend({
         assetProvider: 'threejs',
-        assetProviderOpts: {}, //TODO: how to pass this and other configurations easily??
         modifierProvider: 'threejs',
         modifierProviderOpts: {},
         type: IRIS.Engine.TYPE_3D,
@@ -70,6 +69,7 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
                     this.obj.controls.update(this.obj.clock.getDelta());
                     this.obj.renderer.render(this.object, this.obj.camera);
                     requestAnimationFrame(this.onFrame.bind(this));
+                    this.engine.render();
                 }
             });
         },
