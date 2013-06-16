@@ -4,6 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta name="language" content="en" />
 	<link rel="stylesheet" type="text/css" href="css/main.css" />
+    <link rel="stylesheet" type="text/css" href="css/twitter.css" />
 	<script src="js/jquery.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
     <script src="js/three.min.js"></script>
@@ -16,97 +17,93 @@
 	<title>Iris</title>
 </head>
 <body>
-<button id="startIrisBtn">Start Iris!</button>
+<input id="search_input"></input>
+<button id="search_btn" class="ui-button">Search</button>
 <div id="container">
 </div>
 <div>
 <script type="text/javascript">
 xmpl = {
-    id:{},
+    id:{
+        searchInput: 'search_input',
+        searchBtn: 'search_btn'
+    },
     clazz:{},
     obj:{},
     val:{},
+    ctrl: {},
+    init: function() {
+        this.obj.searchBtn = $('#'+this.id.searchBtn);
+        this.obj.searchInput = $('#'+this.id.searchInput);
+        this.obj.searchBtn.click(function(){
+            xmpl.searching(true);
+            xmpl.search(xmpl.obj.searchInput.val());
+        });
+        this.obj.searchInput.keypress(function(e){
+            var code = (e.keyCode ? e.keyCode : e.which);
+            if(code == 13) {
+                xmpl.obj.searchBtn.trigger('click');
+            }
+        });
+        /* Codebird Initialization */
+        this.cb = new Codebird;
+        this.cb.setConsumerKey('PHJK3C4eh0b7Yjb6tUveQ', '7OMN0Bzj932ZH9LQwO5MebW8IalCIpHvJ0UO4pbzVDs');
+        this.cb.__call(
+            'oauth2_token',
+            {},
+            function (reply) {
+                xmpl.val.bearerToken = reply.access_token;
+            }
+        );
+        /* Datasources */
+        var tweets = {id: 'tweets'};
+        this.twitterDS = IRIS.createDatasource(tweets);
+        /* Entities */
+        var tweet = {id:'tweet', ds:'tweets', index:'id_str'};
+        var ent = IRIS.createEntity(tweet);
+        IRIS.start('planetarium');
+    },
     search: function(query) {
         xmpl.cb.__call(
             'search_tweets',
             'q=' + encodeURIComponent(query),
             function (reply) {
-                alert(reply);
+                if (typeof reply !== 'undefined' && reply.httpstatus == 200)
+                    xmpl.twitterDS.processData(reply.statuses);
+                    xmpl.searching(false);
             },
             true // this parameter required
         );
+    },
+    searching: function(ongoing) {
+        xmpl.ctrl.isSearching = ongoing;
+        if (ongoing) {
+            $('body').css('cursor','wait');
+            xmpl.obj.searchInput.attr('disabled','true');
+            xmpl.obj.searchBtn.attr('disabled','true');
+        } else {
+            $('body').css('cursor','auto');
+            xmpl.obj.searchInput.removeAttr('disabled');
+            xmpl.obj.searchBtn.removeAttr('disabled');
+        }
+        
     }
 };
-xmpl.cb = new Codebird;
-xmpl.cb.setConsumerKey('PHJK3C4eh0b7Yjb6tUveQ', '7OMN0Bzj932ZH9LQwO5MebW8IalCIpHvJ0UO4pbzVDs');
-xmpl.cb.__call(
-    'oauth2_token',
-    {},
-    function (reply) {
-        xmpl.val.bearerToken = reply.access_token;
-    }
-);
 
 </script>
 <script type="text/javascript">
-/* Datasources */
-var tweets = {id: 'tweet'};
-var ds = IRIS.createDatasource(tweets);
-//var ds1 = {id:'devices', uri:'/aircrack/index.php?r=api/getDevices', auto: true, rate: 2000};
-//var ds2 = {id:'network', uri:'/aircrack/index.php?r=api/getNetworks', auto: true, rate: 10000};
-//var arrDS = [ds1, ds2];
-//var ds = IRIS.createDatasource(arrDS);
-
-/* Entities */
-var e1 = {id:'device', ds:'devices', exclude:['Probed_ESSIDs','Packets']};
-var e2 = {id:'network', index: 'BSSID'};
-var arrE = [e1,e2];
-var ent = IRIS.createEntity(arrE);
-
-
 $(document).ready(function(){
     IRIS.ui.asset= {
-        device: {
-            //entity: 'device',
+        tweet: {
             type: 'sphere',
             class: 'ui-device', //We can extract color from here.
-            //color: '#454545',
-            //color: 'red',
-            //color: {r:255, g:255, b:255, a: 255},
-            //color: new IRIS.Color(1, 1, 1, 1);
             radius: 12,
-            segments: 6,
-            rings: 6,
-            create: ['haloC','inflation']
-        },
-        network: {
-            type: 'sphere',
-            class: 'ui-network',
-            color: '#2222CC',
-            radius: 20,
-            segments: 6,
-            rings: 6,
-            create: ['haloB','inflation']
+            segments: 10,
+            rings: 10,
+            create: ['haloC']
         }
     };
-    // POSITION
     IRIS.ui.modifier = {
-        haloA: {
-            target: 'position',
-            zone: 'circle',
-            from: {x:100, y:100, z: 100},
-            scale: 100,
-            step: 0.5,
-            plane: 'xz'
-        },
-        haloB: {
-            target: 'position',
-            zone: 'circle',
-            from: {x:0,y:0,z:0},
-            scale: 200,
-            step: 2,
-            plane: 'xy'
-        },
         haloC: {
             target: 'position',
             from: {zone: 'circle', radius: 100, x:100, y:100, z: 100}, //TODO: set position before move modifier to tween
@@ -114,55 +111,8 @@ $(document).ready(function(){
             lapse: 9000,
             easing: 'elastic'
         },
-        
-        // Position randomly on a halo.
-        positionA: {
-            target:'pasition',
-            from:{x:200, y:200, z:200},
-            zone: 'circle',
-            scale: 200,
-            step: 2,
-            plane: 'xy'
-        },
-        //From center to surface of a sphere.
-        positionB: {
-            target:'position',
-            to:{zone:'sphere', radius: 400},
-            //easing: 'exp.Out',
-            //lapse: 400
-        },
-        // Position from zone to zone
-        positionC: {
-            target: 'position',
-            from: {
-                zone: 'circle',
-                x: 100, 
-                y: 100, 
-                z: 100,
-                scale: 200,
-                step: 2,
-                plane: 'xy'
-            },
-            to: {
-                x: 300,
-                y: 500,
-                z: 600
-            },
-            easing: 'linear',
-            lapse: 400
-        }
     };
-    // SCALE
-    IRIS.ui.modifier.inflation = {
-        target: 'scale',
-        from: 0,
-        to: 1,
-        easing: 'lineal',
-        lapse: 400
-    };
-    $('#startIrisBtn').button().click(function(){
-        IRIS.start('planetarium');
-    });
+    xmpl.init();
 });
 
 </script>
