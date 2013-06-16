@@ -15,6 +15,7 @@
 </head>
 <body>
 <button id="startIrisBtn">Start Iris!</button>
+<input></input>
 <div id="container">
 </div>
 <div>
@@ -45,7 +46,7 @@ $(document).ready(function(){
             radius: 12,
             segments: 6,
             rings: 6,
-            create: ['haloC','inflation']
+            create: ['haloC','glow']
         },
         network: {
             type: 'sphere',
@@ -54,7 +55,7 @@ $(document).ready(function(){
             radius: 20,
             segments: 6,
             rings: 6,
-            create: ['haloB','inflation']
+            create: ['haloB','glow']
         }
     };
     // POSITION
@@ -81,6 +82,13 @@ $(document).ready(function(){
             to: {zone: 'sphere', pattern:1, radius: 300, x:100, y:100, z: 100},
             lapse: 9000,
             easing: 'elastic'
+        },
+        glow: {
+            target: 'color',
+            from: {r: 1, g: 1, b: 1, a: 0.01},
+            to: {r: 1, g: 1, b: 1, a: 0.9},
+            lapse: 3000,
+            easing: 'quad'
         },
         
         // Position randomly on a halo.
