@@ -3,8 +3,7 @@ IRIS.ctrl.ds.auto = {}; //Register of datasources waiting to request
 IRIS.createDatasource= function(pDS, pOpts) {
     var id  = false;
     if (typeof pDS == 'string' &&
-        typeof pOpts == 'object' &&
-        typeof pOpts.uri == 'string') {
+        typeof pOpts == 'object') {
         id = pDS;
     } else if (typeof pDS == 'object' &&
                typeof pDS.id == 'string') {
@@ -15,15 +14,14 @@ IRIS.createDatasource= function(pDS, pOpts) {
         var arrDS = [];
         for(var i=0; i<pDS.length; i++) {
             if (!(pDS[i] instanceof Array) &&
-                typeof pDS[i].id == 'string' && 
-                typeof pDS[i].uri == 'string') {
+                typeof pDS[i].id == 'string') {
                 arrDS.push(IRIS.createDatasource(pDS[i]));
             } else {
                 arrDS.push(false);
             }
         }
         return arrDS;
-    } else if (id !== false && typeof pOpts.uri == 'string') {
+    } else if (id !== false) {
         pOpts.id = id;
         return IRIS._createDatasource(pOpts);
     }
