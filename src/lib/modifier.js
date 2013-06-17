@@ -56,7 +56,7 @@ IRIS.Modifier = Class.extend({
         if(this._fromZone)
             var fromValue = this.from.getStep();
         else
-            var fromValue = this.from;
+            var fromValue = this.from.clone();
 
         if (this.to === false)
             this.apply(oAsset, fromValue);
@@ -64,7 +64,7 @@ IRIS.Modifier = Class.extend({
             if (this._toZone)
                 var toValue = this.to.getStep();
             else
-                var toValue = this.to;
+                var toValue = this.to.clone(); //TODO: provide cloning for single value vars ?
             var tweenModifier = new IRIS.TweenModifier({
                                 target: oAsset,
                                 from: fromValue,
