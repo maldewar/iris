@@ -45,7 +45,7 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
 
                     document.body.appendChild(this.obj.renderer.domElement); // TODO: option to select scene area.
                     this.obj.clock = new THREE.Clock();
-                    this.obj.controls = new THREE.TrackballControls( this.obj.camera );
+                    this.obj.controls = new THREE.TrackballControls( this.obj.camera, this.obj.renderer.domElement );
                     this.obj.controls.rotateSpeed = 2.0;//1.0
                     this.obj.controls.zoomSpeed = 2.2;//1.2
                     this.obj.controls.panSpeed = 1.6;//0.8
@@ -66,9 +66,9 @@ IRIS.PlanetariumEngine = IRIS.Engine.extend({
                     this.object.add(oAsset.object);
                 },
                 onFrame: function() {
+                    requestAnimationFrame(this.onFrame.bind(this));
                     this.obj.controls.update(this.obj.clock.getDelta());
                     this.obj.renderer.render(this.object, this.obj.camera);
-                    requestAnimationFrame(this.onFrame.bind(this));
                     this.engine.render();
                 }
             });
