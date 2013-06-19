@@ -46,7 +46,7 @@ $(document).ready(function(){
             radius: 12,
             segments: 6,
             rings: 6,
-            create: ['haloC','glow']
+            create: ['haloD','glow']
         },
         network: {
             type: 'sphere',
@@ -83,11 +83,18 @@ $(document).ready(function(){
             lapse: 9000,
             easing: 'elastic'
         },
+        haloD: {
+            target: 'position',
+            from:{ref: 'asset'},
+            to:{zone:'circle', pattern:1, x:0, y:100, z:0, plane:'xz', radius:300, step: 1},
+            lapse: 2500,
+            easing: 'bounceOut'
+        },
         glow: {
             target: 'color',
             from: {r: 1, g: 1, b: 1, a: 0.01},
-            to: {r: 1, g: 1, b: 1, a: 0.9},
-            lapse: 3000,
+            to: {r: 1, g: 1, b: 1, a: 1},
+            lapse: 500,
             easing: 'quad'
         },
         
