@@ -11,25 +11,6 @@ IRIS.ModifierProvider = Class.extend({
             }
         }
     },
-    getModifier: function(id) {
-        if (typeof this._modifierIns[id] !== 'undefined')
-            return this._modifierIns[id];
-        var opts = this.getModifierOpts(id);
-        if (opts) {
-            switch (opts.target) {
-                default:
-                    var oModifier = this._getModifier('id', opts);
-            }
-            /*var oModifier = new IRIS.Modifier({
-                            id: id,
-                            target: opts.target,
-                            zone: opts.zone,
-                            zoneOpts: opts.zoneOpts});*/
-            this._modifierIns[id] = oModifier;
-            return oModifier;
-        }
-        return false;
-    },
     apply: function(oAsset, modifierIds) {
         for(var key in modifierIds) {
             if (IRIS._isString(modifierIds[key])) {
@@ -55,12 +36,7 @@ IRIS.ModifierProvider = Class.extend({
         return false;
     },
     _getModifierInstance: function(opts) {
-        switch(opts.target) {
-            case IRIS.MODIFIER_TARGET_POSITION:
-                return new IRIS.ThreejsPositionModifier(opts);
-            default:
-                return false;
-        }
+        return this.getModifier(opts);
     },
     _normalizeOpts: function(modifierId, opts) {
         if (typeof opts == 'object') {
