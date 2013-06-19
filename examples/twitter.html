@@ -100,17 +100,39 @@ $(document).ready(function(){
             radius: 12,
             segments: 10,
             rings: 10,
-            create: ['haloC']
+            create: ['toExistence','turnOn'],
+            delete: ['toExtinction', 'turnOff']
         }
     };
     IRIS.ui.modifier = {
-        haloC: {
+        toExistence: {
             target: 'position',
-            from: {zone: 'circle', radius: 100, x:100, y:100, z: 100}, //TODO: set position before move modifier to tween
-            to: {zone: 'sphere', pattern:1, radius: 300, x:100, y:100, z: 100},
-            lapse: 9000,
-            easing: 'elastic'
+            from: {y:-200},
+            to: {zone: 'circle', pattern:1, radius: 100, step:1,y:-200, plane:'xz',
+                onStep: function(){
+                    this.y += 10;
+                    this.radius += 10;
+                }},
+            lapse: 4500,
+            easing: 'bounceOut'
         },
+        toExtinction: {
+            target: 'position',
+            from:{ref:'asset'},
+            to:{ref:'asset',y:-100},
+            lapse: 2000
+        },
+        turnOn: {
+            target:'color',
+            from:{r:1,g:1,b:1,a:0},
+            to:{r:1,g:1,b:1,a:1}
+        },
+        turnOff: {
+            target:'color',
+            from:{ref:'asset'},
+            to:{a:0}
+            lapse: 1000
+        }
     };
     xmpl.init();
 });
