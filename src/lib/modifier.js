@@ -4,11 +4,15 @@ IRIS.MODIFIER_TARGET_COLOR = 'color';
 IRIS.MODIFIER_TARGET_SIZE = 'size';
 IRIS.MODIFIER_TARGET_ROTATION = 'rotation';
 
+IRIS.MODIFIER_REF_ASSET = 'asset';
+
 IRIS.Modifier = Class.extend({
     _defaultLapse: 500,
     _defaultEasing: 'linear',
     _fromZone: false,
     _toZone: false,
+    _fromRef: false,
+    _toRef: false,
     init: function(opts) {
         this.id = opts.id;
         this.target = opts.target;
@@ -25,12 +29,11 @@ IRIS.Modifier = Class.extend({
                 from = IRIS.getZone(from.zone, from);
             } else
                 from = this._normalize(from);
-        } else if (IRIS._isNumber(from)) {
+        } else {
             from =  this._normalize(from);
-        } else if (IRIS._isString(from)) {
-            from = false; //TODO: specify special behaviors, such as take the asset current value as start point
-        } else
-            from = false;
+        }
+        if (from.ref == IRIS.MODIFIER_REF_ASSET)
+            this._fromRef = IRIS.MODIFIER_REF_ASSET;        
         this.from = from;
     },
     setTo: function(to) {
@@ -40,12 +43,13 @@ IRIS.Modifier = Class.extend({
                 to = IRIS.getZone(to.zone, to);
             } else
                 to = this._normalize(to);
-        } else if (IRIS._isNumber(to)) {
+        } else if(IRIS._isNumber(to)){
             to = this._normalize(to);
-        } else if (IRIS._isString(to)) {
-            to = false; //TODO: specify special behaviors, such as take the asset current value as end point
-        } else
+        } else {
             to = false;
+        }
+        if (to.ref == IRIS.MODIFIER_REF_ASSET)
+            this._toRef = IRIS.MODIFIER_REF_ASSET;
         this.to = to;
     },
     setTween: function(opts) {
@@ -57,6 +61,8 @@ IRIS.Modifier = Class.extend({
             var fromValue = this.from.getStep();
         else
             var fromValue = this.from.clone();
+        if (this._fromRef)
+            fromValue = this._normalizeToRef(fromValue, oAsset);
 
         if (this.to === false)
             this.apply(oAsset, fromValue);
@@ -64,7 +70,9 @@ IRIS.Modifier = Class.extend({
             if (this._toZone)
                 var toValue = this.to.getStep();
             else
-                var toValue = this.to.clone(); //TODO: provide cloning for single value vars ?
+                var toValue = this.to.clone(); //TODO: provide cloning for single value vars?
+            if (this._toRef)
+                toValue = this._normalizeToRef(toValue, oAsset);
             var tweenModifier = new IRIS.TweenModifier({
                                 target: oAsset,
                                 from: fromValue,
@@ -88,6 +96,32 @@ IRIS.Modifier = Class.extend({
                 return IRIS._normalizeToColor(opts,{r:1,g:1,b:1,a:1});
             default:
                 return false;
+        };
+    },
+    _normalizeToRef: function(value, oAsset) {
+        switch (this.target) {
+            case IRIS.MODIFIER_TARGET_POSITION:
+                if (oAsset.position === false)
+                    return value;
+                return value.add(oAsset.position);
+            case IRIS.MODIFIER_TARGET_SIZE:
+                if (oAsset.size === false)
+                    return value;
+                return oAsset.size;
+            case IRIS.MODIFIER_TARGET_ROTATION:
+                if (oAsset.rotation === false)
+                    return value;
+                return oAsset.rotation;
+            case IRIS.MODIFIER_TARGET_SCALE:
+                if (oAsset.scale === false)
+                    return value;
+                return oAsset.scale;
+            case IRIS.MODIFIER_TARGET_COLOR:
+                if (oAsset.color === false)
+                    return value;
+                return oAsset.color;
+            default:
+                return value;
         };
     },
     _upgradeFrom: function(opts) {
