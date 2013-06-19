@@ -29,9 +29,11 @@ IRIS.BaseVectorZone = Class.extend({
     init: function(opts) {
         this.x = IRIS._setterUndef(opts.x,0);
         this.y = IRIS._setterUndef(opts.y,0);
+        this.z = IRIS._setterUndef(opts.z,0);
         this.pattern = IRIS._setterUndef(opts.pattern,IRIS.ZONE_PATTERN_RANDOM);
-        this.step = IRIS._setterUndef(opts.step, 0.1);
+        this.step = IRIS._setterUndef(opts.step, 0.1); //TODO: if not specified try to calculate step value according to numb. of elements.
         this.scale = IRIS._setterUndef(opts.scale, 1);
+        this.onStep = (IRIS._isFn(opts.onStep)?opts.onStep:false);
     }
 });
 
